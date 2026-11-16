@@ -1,0 +1,13 @@
+[workspace]
+resolver = "2"
+members = ["crates/jamx-core", "crates/jamx-cli"]
+exclude = ["crates/jamx-service", "crates/jamx-pack", "crates/hello"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["Daniel Cukier"]
+
+[profile.release]
+opt-level = 3

@@ -1,0 +1,28 @@
+[package]
+name = "jamx-service"
+description = "JAMX: a non-custodial exchange service for JAM (PVM entry points)"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["Daniel Cukier"]
+publish = false
+
+[features]
+default = []
+logging = ["jam-pvm-common/logging"]
+profile = ["logging", "jamx-core/profile"]
+
+[dependencies]
+jamx-core = { path = "../jamx-core", default-features = false }
+jam-pvm-common = { version = "=0.1.29", default-features = false, features = ["service"] }
+jam-types = { version = "=0.1.29", default-features = false }
+polkavm-derive = "=0.37.0"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+debug = false
+
+[workspace]

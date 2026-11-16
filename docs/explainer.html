@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JAMX Explained</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (about 68ch); figures and tables break out to a wider measure
+   and scroll inside their own box on narrow screens. */
+:root {
+  --bg: #F5F8F7; --surface: #FFFFFF; --fg: #13201C; --muted: #566761; --line: #C9D5D0;
+  --accent: #0B6E5B; --accent-soft: #DDF0EA; --danger: #A8324A; --danger-soft: #F7E1E6;
+  --amber: #8A5A00; --amber-soft: #F6EBD3;
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1715; --surface: #17221F; --fg: #E3ECE8; --muted: #94A49E; --line: #2D3B37;
+    --accent: #55C7AC; --accent-soft: #143A32; --danger: #E57A91; --danger-soft: #3A1B23;
+    --amber: #E0AB52; --amber-soft: #33290F; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1715; --surface: #17221F; --fg: #E3ECE8; --muted: #94A49E; --line: #2D3B37;
+  --accent: #55C7AC; --accent-soft: #143A32; --danger: #E57A91; --danger-soft: #3A1B23;
+  --amber: #E0AB52; --amber-soft: #33290F; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font: 16px/1.62 var(--font-body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: clamp(23px, 3.4vw, 30px); font-weight: 600; margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line); }
+h3 { font-size: 19px; font-weight: 600; margin-top: 34px; }
+p { margin: 14px 0 0; }
+.lede { font-size: 19px; color: var(--muted); margin-top: 14px; }
+.eyebrow { font: 500 12px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 8px 10px; margin-top: 26px; }
+nav.toc a { font-size: 14px; text-decoration: none; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--fg); }
+nav.toc a:hover { border-color: var(--accent); }
+.status { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.status div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.status b { display: block; font: 600 22px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.status span { font-size: 13.5px; color: var(--muted); }
+ul, ol { margin: 12px 0 0; padding-left: 22px; }
+li { margin-top: 7px; }
+strong { font-weight: 600; }
+code { font: 0.9em var(--font-mono); background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+figure { margin: 26px 0 0; max-width: 100%; min-width: 0; }
+section { min-width: 0; }
+.scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+figcaption { font-size: 14px; color: var(--muted); margin-top: 10px; max-width: 68ch; }
+svg.dg { display: block; width: 100%; min-width: 700px; height: auto; color: var(--fg); font-family: var(--font-body); }
+.dg .bx { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; }
+.dg .bx-a { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+.dg .bar { fill: var(--line); stroke: none; }
+.dg .bx-d { fill: var(--danger-soft); stroke: var(--danger); stroke-width: 1.5; }
+.dg .cell-d { fill: var(--danger); stroke: none; opacity: 0.85; }
+.dg .band-w { fill: var(--amber-soft); stroke: var(--amber); stroke-width: 1; stroke-dasharray: 2 3; }
+.dg .band-a { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; stroke-dasharray: 2 3; }
+.dg .t { fill: var(--fg); font-size: 13px; }
+.dg .tb { fill: var(--fg); font-size: 13.5px; font-weight: 600; }
+.dg .tm { fill: var(--muted); font-size: 12px; }
+.dg .td { fill: var(--danger); font-size: 12.5px; font-weight: 600; }
+.dg .ln { stroke: var(--fg); stroke-width: 1.5; fill: none; }
+.dg .ln-m { stroke: var(--muted); stroke-width: 1.3; stroke-dasharray: 5 4; fill: none; }
+.dg .ln-b { stroke: var(--muted); stroke-width: 1.2; fill: none; }
+.dg .ln-d { stroke: var(--danger); stroke-width: 2.2; fill: none; }
+.dg .mk { fill: var(--fg); } .dg .mkm { fill: var(--muted); }
+.dg .k { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+.dg .kd { stroke: var(--surface); stroke-width: 1.6; fill: none; }
+.dg .dot { fill: var(--accent); }
+.dg .dot-r { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+.dg .dot-o { fill: none; stroke: var(--line); stroke-width: 1.5; }
+.dg .chip-ok { fill: var(--bg); stroke: var(--line); }
+.dg .chip-bad { fill: var(--danger-soft); stroke: var(--danger); }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 14.5px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font: 500 12px/1.3 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; }
+.answer { margin-top: 22px; padding: 18px 20px; background: var(--accent-soft); border-left: 4px solid var(--accent); border-radius: 0 10px 10px 0; }
+.answer p:first-child { margin-top: 0; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 18px; }
+.pair > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+.pair h4 { margin: 0 0 6px; font: 600 15px/1.3 var(--font-display); }
+.pair p { margin-top: 8px; font-size: 15px; }
+.tag { display: inline-block; font: 500 11.5px/1 var(--font-mono); letter-spacing: 0.05em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; margin-right: 8px; white-space: nowrap; }
+.tag.done { background: var(--accent-soft); color: var(--accent); }
+.tag.todo { background: var(--amber-soft); color: var(--amber); }
+.tag.ext { background: var(--danger-soft); color: var(--danger); }
+ul.plan { list-style: none; padding-left: 0; }
+ul.plan li { padding: 10px 0; border-bottom: 1px solid var(--line); }
+ul.plan li:last-child { border-bottom: 0; }
+.small { font-size: 14px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header class="col">
+  <div class="eyebrow">Prototype · 16 November 2026</div>
+  <h1>JAMX: an exchange where nobody holds anyone else's money</h1>
+  <p class="lede">What was built from the article <a href="https://danicuki.substack.com/p/bitcoin-wasnt-hacked-binance-was">Bitcoin Wasn't Hacked. Binance Was.</a>, how it works, whether only JAM allows it, and what is missing before it is a product.</p>
+</header>
+
+<div class="status">
+  <div><b>130 tests</b><span>passing, including real data from the Bitcoin network and 16 attacks that no longer work</span></div>
+  <div><b>8 acts</b><span>of the full demonstration ran on a local testnet of 6 validators</span></div>
+  <div><b>≈290 orders</b><span>per work-package and per core, measured; two cores tested at once</span></div>
+  <div><b>0 keys</b><span>able to move the money of more than one person</span></div>
+</div>
+
+<nav class="toc" aria-label="Sections">
+  <a href="#plain">In plain words</a>
+  <a href="#inside">Inside</a>
+  <a href="#only-jam">Only on JAM?</a>
+  <a href="#lessons">Earlier attempts</a>
+  <a href="#missing">What is missing</a>
+  <a href="#sources">Sources</a>
+</nav>
+
+<section id="plain">
+<h2>How it works, for someone who has never seen any of this</h2>
+<div class="col">
+<p>When you leave money at an exchange, it goes into a shared vault, and the vault has a key. Whoever gets that key takes everybody's money. That is what happened at Binance: nobody broke Bitcoin, they got the key to the vault.</p>
+<p>JAMX does the exchange's job with no shared vault. Each person's money stays under that person's own key, and the thing that matches offers is a program nobody operates.</p>
+</div>
+
+<figure>
+  <div class="scroll"><svg class="dg" viewBox="0 0 880 300" role="img" aria-label="With custody, one stolen key reaches all twelve customers of the vault; in JAMX it reaches one.">
+<text x="220" y="28" class="tb" text-anchor="middle">Custodial exchange</text>
+<rect x="60" y="46" width="320" height="176" rx="10" class="bx-d"/>
+<text x="220" y="240" class="tm" text-anchor="middle">one vault, one key</text>
+<rect x="84" y="70" width="56" height="30" rx="5" class="cell-d"/>
+<rect x="156" y="70" width="56" height="30" rx="5" class="cell-d"/>
+<rect x="228" y="70" width="56" height="30" rx="5" class="cell-d"/>
+<rect x="300" y="70" width="56" height="30" rx="5" class="cell-d"/>
+<rect x="84" y="118" width="56" height="30" rx="5" class="cell-d"/>
+<rect x="156" y="118" width="56" height="30" rx="5" class="cell-d"/>
+<rect x="228" y="118" width="56" height="30" rx="5" class="cell-d"/>
+<rect x="300" y="118" width="56" height="30" rx="5" class="cell-d"/>
+<rect x="84" y="166" width="56" height="30" rx="5" class="cell-d"/>
+<rect x="156" y="166" width="56" height="30" rx="5" class="cell-d"/>
+<rect x="228" y="166" width="56" height="30" rx="5" class="cell-d"/>
+<rect x="300" y="166" width="56" height="30" rx="5" class="cell-d"/>
+<text x="220" y="280" class="td" text-anchor="middle">stolen key: 12 of 12 lose</text>
+<line x1="440" y1="20" x2="440" y2="285" class="ln-m"/>
+<text x="660" y="28" class="tb" text-anchor="middle">JAMX</text>
+<rect x="524" y="70" width="56" height="30" rx="5" class="bx"/>
+<circle cx="568" cy="85" r="4" class="k"/><line x1="550" y1="85" x2="564" y2="85" class="k"/><line x1="554" y1="85" x2="554" y2="90" class="k"/>
+<rect x="596" y="70" width="56" height="30" rx="5" class="bx"/>
+<circle cx="640" cy="85" r="4" class="k"/><line x1="622" y1="85" x2="636" y2="85" class="k"/><line x1="626" y1="85" x2="626" y2="90" class="k"/>
+<rect x="668" y="70" width="56" height="30" rx="5" class="bx"/>
+<circle cx="712" cy="85" r="4" class="k"/><line x1="694" y1="85" x2="708" y2="85" class="k"/><line x1="698" y1="85" x2="698" y2="90" class="k"/>
+<rect x="740" y="70" width="56" height="30" rx="5" class="bx"/>
+<circle cx="784" cy="85" r="4" class="k"/><line x1="766" y1="85" x2="780" y2="85" class="k"/><line x1="770" y1="85" x2="770" y2="90" class="k"/>
+<rect x="524" y="118" width="56" height="30" rx="5" class="bx"/>
+<circle cx="568" cy="133" r="4" class="k"/><line x1="550" y1="133" x2="564" y2="133" class="k"/><line x1="554" y1="133" x2="554" y2="138" class="k"/>
+<rect x="596" y="118" width="56" height="30" rx="5" class="bx"/>
+<circle cx="640" cy="133" r="4" class="k"/><line x1="622" y1="133" x2="636" y2="133" class="k"/><line x1="626" y1="133" x2="626" y2="138" class="k"/>
+<rect x="668" y="118" width="56" height="30" rx="5" class="cell-d"/>
+<circle cx="712" cy="133" r="4" class="kd"/><line x1="694" y1="133" x2="708" y2="133" class="kd"/><line x1="698" y1="133" x2="698" y2="138" class="kd"/>
+<rect x="740" y="118" width="56" height="30" rx="5" class="bx"/>
+<circle cx="784" cy="133" r="4" class="k"/><line x1="766" y1="133" x2="780" y2="133" class="k"/><line x1="770" y1="133" x2="770" y2="138" class="k"/>
+<rect x="524" y="166" width="56" height="30" rx="5" class="bx"/>
+<circle cx="568" cy="181" r="4" class="k"/><line x1="550" y1="181" x2="564" y2="181" class="k"/><line x1="554" y1="181" x2="554" y2="186" class="k"/>
+<rect x="596" y="166" width="56" height="30" rx="5" class="bx"/>
+<circle cx="640" cy="181" r="4" class="k"/><line x1="622" y1="181" x2="636" y2="181" class="k"/><line x1="626" y1="181" x2="626" y2="186" class="k"/>
+<rect x="668" y="166" width="56" height="30" rx="5" class="bx"/>
+<circle cx="712" cy="181" r="4" class="k"/><line x1="694" y1="181" x2="708" y2="181" class="k"/><line x1="698" y1="181" x2="698" y2="186" class="k"/>
+<rect x="740" y="166" width="56" height="30" rx="5" class="bx"/>
+<circle cx="784" cy="181" r="4" class="k"/><line x1="766" y1="181" x2="780" y2="181" class="k"/><line x1="770" y1="181" x2="770" y2="186" class="k"/>
+<text x="660" y="240" class="tm" text-anchor="middle">each balance under its owner's key</text>
+<text x="660" y="280" class="tb" text-anchor="middle">stolen key: 1 of 12 loses</text>
+</svg></div>
+  <figcaption>The same stolen key in the two models. With a shared vault, everyone loses. With one balance per key, one person does.</figcaption>
+</figure>
+
+<div class="col">
+<h3>A notebook nobody can alter</h3>
+<p>JAM is a shared computer run by about a thousand independent machines that check one another's work. A program running on it behaves like a notebook of balances: "Alice has 100 reais, Bob has 50 dollars". A line changes only when its owner signs the request with their own key. Not even the author of the program can change someone else's line.</p>
+
+<h3>An order is a signed note</h3>
+<p>"I will buy up to 3,000 dollars and pay at most R$ 5.60 for each. Signed: Bob." The note does not move Bob's money anywhere. It only authorises a swap if someone turns up selling within that limit.</p>
+
+<h3>Anyone can collect the notes</h3>
+<p>Each round, someone gathers the notes and hands them to the program. That person cannot touch a balance and cannot reorder the notes to gain from it: the program sorts everything itself, and everyone in the round pays the same price. What they can do is choose which notes go in, and charge the fee each note agrees to pay.</p>
+
+<h3>The program checks and swaps</h3>
+<p>First it checks every signature, which is the heavy work and runs in parallel. Then it looks at the balances, leaves out anyone who lacks the money, finds the single price at which the most people can trade, and makes the swaps directly from one balance to another, all at once. If anything fails halfway, nothing happens.</p>
+</div>
+
+<figure>
+  <div class="scroll"><svg class="dg" viewBox="0 0 940 262" role="img" aria-label="The path of a trade: signed order, batch, refine, accumulate, updated balance.">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk"/></marker>
+<marker id="arm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mkm"/></marker>
+</defs>
+<rect x="20" y="70" width="148" height="112" rx="8" class="bx"/>
+<text x="94" y="96" class="tb" text-anchor="middle">1 · You sign</text>
+<text x="94" y="120" class="tm" text-anchor="middle">an order with a limit</text>
+<text x="94" y="137" class="tm" text-anchor="middle">price, on your own</text>
+<text x="94" y="154" class="tm" text-anchor="middle">device</text>
+<rect x="208" y="70" width="148" height="112" rx="8" class="bx"/>
+<text x="282" y="96" class="tb" text-anchor="middle">2 · Someone bundles</text>
+<text x="282" y="120" class="tm" text-anchor="middle">the round's orders into</text>
+<text x="282" y="137" class="tm" text-anchor="middle">a batch; it touches</text>
+<text x="282" y="154" class="tm" text-anchor="middle">no balance</text>
+<rect x="396" y="70" width="148" height="112" rx="8" class="bx-a"/>
+<text x="470" y="96" class="tb" text-anchor="middle">3 · Refine</text>
+<text x="470" y="120" class="tm" text-anchor="middle">checks signatures,</text>
+<text x="470" y="137" class="tm" text-anchor="middle">sorts by price, drops</text>
+<text x="470" y="154" class="tm" text-anchor="middle">what cannot cross</text>
+<rect x="584" y="70" width="148" height="112" rx="8" class="bx-a"/>
+<text x="658" y="96" class="tb" text-anchor="middle">4 · Accumulate</text>
+<text x="658" y="120" class="tm" text-anchor="middle">sees balances, finds</text>
+<text x="658" y="137" class="tm" text-anchor="middle">one price, swaps</text>
+<text x="658" y="154" class="tm" text-anchor="middle">balance for balance</text>
+<rect x="772" y="70" width="148" height="112" rx="8" class="bx"/>
+<text x="846" y="96" class="tb" text-anchor="middle">5 · Done</text>
+<text x="846" y="120" class="tm" text-anchor="middle">your balance changed,</text>
+<text x="846" y="137" class="tm" text-anchor="middle">under your own key</text>
+<line x1="171" y1="126" x2="205" y2="126" class="ln" marker-end="url(#ar)"/>
+<text x="188" y="56" class="tm" text-anchor="middle">signed order</text>
+<line x1="359" y1="126" x2="393" y2="126" class="ln" marker-end="url(#ar)"/>
+<text x="376" y="56" class="tm" text-anchor="middle">batch</text>
+<line x1="547" y1="126" x2="581" y2="126" class="ln" marker-end="url(#ar)"/>
+<text x="564" y="56" class="tm" text-anchor="middle">crossing book, up to 48 KiB</text>
+<line x1="735" y1="126" x2="769" y2="126" class="ln" marker-end="url(#ar)"/>
+<text x="752" y="56" class="tm" text-anchor="middle">new balances</text>
+<path d="M20,196 v8 H356 v-8" class="ln-b"/><text x="188.0" y="224" class="tm" text-anchor="middle">off-chain: nothing has changed yet</text>
+<path d="M396,196 v8 H544 v-8" class="ln-b"/><text x="470.0" y="224" class="tm" text-anchor="middle">in parallel; re-run by</text><text x="470.0" y="240" class="tm" text-anchor="middle">randomly chosen validators</text>
+<path d="M584,196 v8 H920 v-8" class="ln-b"/><text x="752.0" y="224" class="tm" text-anchor="middle">by every validator: all or nothing</text>
+</svg></div>
+  <figcaption>The path of a trade. In the demonstration Bob would pay up to 5.60 and the sellers asked 5.30 and 5.50: the round closed at 5.55 for everyone, and a fourth order, with no money behind it, simply did not count.</figcaption>
+</figure>
+
+<div class="col">
+<h3>What about bitcoin?</h3>
+<p>Bitcoin never enters the notebook. It stays on the Bitcoin network, in its owner's wallet. The program only needs to know whether a payment happened.</p>
+<p>JAM has no internet connection. Everything it learns about the outside world is carried in by someone, like a letter. To prove a payment, a person brings the Bitcoin block headers and a receipt. The program redoes the sums: each block carries the work it must, the difficulty is the right one, the payment is buried under enough blocks, the receipt points to the right address. If someone brings a false proof, the sums do not add up and nothing happens.</p>
+<p>The deal keeps time by Bitcoin's own clock, not JAM's. Every Bitcoin block carries a timestamp, and Alice has a fixed time, say two hours, to get her payment into a block. The deal can fail only after the program has been shown blocks that are past that time. If nobody carries the headers, no time passes for the deal, so Alice cannot lose by silence: whoever wants the refund has to bring the very headers that would prove her payment.</p>
+</div>
+
+<figure>
+  <div class="scroll"><svg class="dg" viewBox="0 0 940 372" role="img" aria-label="Buying bitcoin: the reais wait locked on JAM, the bitcoin is paid on the Bitcoin network, someone carries the proof to JAM and the reais are released. No arrow goes from JAM to Bitcoin.">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk"/></marker>
+<marker id="arm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mkm"/></marker>
+</defs>
+<rect x="20" y="36" width="900" height="104" rx="10" class="band-w"/>
+<rect x="20" y="234" width="900" height="104" rx="10" class="band-a"/>
+<text x="36" y="60" class="tb" text-anchor="start">Bitcoin network</text>
+<text x="36" y="258" class="tb" text-anchor="start">JAMX, on JAM</text>
+<rect x="290" y="56" width="230" height="64" rx="8" class="bx"/>
+<text x="405" y="82" class="tb" text-anchor="middle">2 · Alice pays 0.001 BTC</text>
+<text x="405" y="102" class="tm" text-anchor="middle">from her wallet to Bob's address</text>
+<rect x="150" y="254" width="200" height="64" rx="8" class="bx"/>
+<text x="250" y="280" class="tb" text-anchor="middle">1 · Bob locks R$ 600</text>
+<text x="250" y="300" class="tm" text-anchor="middle">Alice locks a 10% bond</text>
+<rect x="470" y="254" width="220" height="64" rx="8" class="bx"/>
+<text x="580" y="280" class="tb" text-anchor="middle">4 · The program redoes the sums</text>
+<text x="580" y="300" class="tm" text-anchor="middle">work, difficulty, blocks on top</text>
+<rect x="730" y="254" width="176" height="64" rx="8" class="bx-a"/>
+<text x="818" y="280" class="tb" text-anchor="middle">5 · Releases</text>
+<text x="818" y="300" class="tm" text-anchor="middle">R$ 600 + bond → Alice</text>
+<line x1="353" y1="286" x2="466" y2="286" class="ln-m" marker-end="url(#arm)"/>
+<text x="410" y="276" class="tm" text-anchor="middle">waiting for proof</text>
+<polyline points="523,88 600,88 600,250" class="ln" marker-end="url(#ar)"/>
+<text x="612" y="178" class="t" text-anchor="start">3 · anyone carries</text>
+<text x="612" y="196" class="tm" text-anchor="start">block headers + a receipt</text>
+<line x1="693" y1="286" x2="726" y2="286" class="ln" marker-end="url(#ar)"/>
+<line x1="110" y1="228" x2="110" y2="150" class="ln-m" marker-end="url(#arm)"/>
+<path d="M100,178 l20,20 M120,178 l-20,20" class="ln-d"/>
+<text x="128" y="184" class="td" text-anchor="start">JAM cannot write</text>
+<text x="128" y="200" class="td" text-anchor="start">to Bitcoin</text>
+<text x="150" y="360" class="tm" text-anchor="start">If Bitcoin moves on and no proof arrives, the R$ 600 go back to Bob, together with Alice's bond.</text>
+</svg></div>
+  <figcaption>Buying bitcoin with reais. Nobody holds both legs: the reais wait on JAM, the bitcoin goes straight from Alice's wallet to Bob's. The bond is there so that Alice cannot walk away for free.</figcaption>
+</figure>
+
+<div class="col">
+<h3>What about reais?</h3>
+<p>A real does not exist without a bank. What the design guarantees is that the bank never touches your bitcoin. The bank issues a digital voucher for each real it holds. In the program it can do three things: issue vouchers up to a ceiling that independent auditors attest, keep the list of who passed its checks, and freeze a balance of its own voucher, on the public record. Taking the voucher out of your account and putting it in another is something it cannot do: that operation does not exist.</p>
+
+<h3>What if I lose my key?</h3>
+<p>Each account can choose its own rules. A second key on a phone that trades but cannot withdraw. A friend who can freeze the account and cannot spend from it. Three trusted people who, together and after a delay, install a new key. A daily limit on what leaves. And every change that weakens the account waits before it takes effect, so that a thief holding your key cannot simply switch the protections off.</p>
+</div>
+
+<figure>
+<div class="scroll">
+<table>
+<thead><tr><th>Who holds the key</th><th>What it can move</th><th>Reach</th></tr></thead>
+<tbody>
+<tr><td>You</td><td>Your balance</td><td>One person</td></tr>
+<tr><td>The guardian friend</td><td>Nothing. Freezes your account for a limited time</td><td>One person, and only to stop</td></tr>
+<tr><td>The issuing bank</td><td>The amount of its own voucher, up to the attested ceiling; a freeze, logged</td><td>The bank's own liability</td></tr>
+<tr><td>Whoever collects the notes</td><td>Nothing. Chooses which enter the round</td><td>None</td></tr>
+<tr><td>Whoever carries the proofs</td><td>Nothing. A false proof does not pass</td><td>Delay only</td></tr>
+<tr><td>The Pix arbiter</td><td>The outcome of one trade</td><td>One trade</td></tr>
+<tr><td>The code administrator</td><td>The code, after announcing it and waiting out a public delay</td><td>Can give the role up for good</td></tr>
+</tbody>
+</table>
+</div>
+<figcaption>The article's test applied to what was built: for each key, what it can move. No answer is "everybody's money".</figcaption>
+</figure>
+</section>
+
+<section id="inside">
+<h2>Inside: two very unequal halves</h2>
+<div class="col">
+<p>A JAM service has two entry points. <strong>Refine</strong> runs off-chain, in parallel, with seconds of computation, and sees no balances at all. <strong>Accumulate</strong> runs on-chain, sees the balances, and has a budget five hundred times smaller. At most 48 KiB passes between them.</p>
+<p>So signatures, Bitcoin's proof-of-work and receipts sit in refine, and everything that depends on a balance sits in accumulate. The round's price is fixed in accumulate, among orders that have money behind them. The first version fixed the price in refine; a test showed that a single unfunded order could distort or void the round, and I changed it.</p>
+</div>
+<figure>
+  <div class="scroll"><svg class="dg" viewBox="0 0 880 236" role="img" aria-label="Capacity per work-package: refine 1,650 orders, output 770, accumulate 290. Accumulate is the bottleneck.">
+<text x="20" y="34" class="tb" text-anchor="start">Refine can authenticate</text>
+<rect x="20" y="44" width="820" height="26" rx="5" class="bar"/>
+<text x="828" y="62" class="t" text-anchor="end">1,650 orders per package  (5 billion gas, 3.03 million per order)</text>
+<text x="20" y="104" class="tb" text-anchor="start">The 48 KiB output holds</text>
+<rect x="20" y="114" width="383" height="26" rx="5" class="bar"/>
+<text x="415" y="132" class="tm" text-anchor="start">about 770 orders  (60 bytes per order)</text>
+<text x="20" y="174" class="tb" text-anchor="start">Accumulate can settle</text>
+<rect x="20" y="184" width="144" height="26" rx="5" class="bx-a"/>
+<text x="176" y="202" class="tm" text-anchor="start">about 290 orders  (10 million gas, 29 thousand per order, a safety reserve)</text>
+</svg></div>
+  <figcaption>Capacity of each stage per work-package on the full chain, under the provisional gas model of Gray Paper 0.8.0 (a memory access costs 25, a branch 20). Refine authenticates more than five times what accumulate can settle.</figcaption>
+</figure>
+<div class="col">
+<h3>Is it multi-core, and is it wasteful?</h3>
+<p>It is multi-core already. Capacity is per work-package, and a service can have one on every core in every block. Tested: two rounds sent at the same moment to the two cores of the test chain landed in the same block and were settled by one accumulate run.</p>
+<p>It was wasteful, and partly still is. The first working version spent 89 thousand gas per order in accumulate; it now spends 29 thousand, measured on a round of 200 orders in a single package. The largest round that fits is about 290 orders: 286 settled, and 300 were refused whole, cleanly, for lack of gas. The largest waste was reading each account with two host calls instead of one and copying an oversized account record around in memory. The floor for this design is near 8 thousand.</p>
+<p>The deeper reason is how JAM is built: 341 cores of stateless computation, and well under one core of computation that touches state. An exchange settles state. The Gray Paper's own estimate for a payments service is 3,000 transactions per package, with a much leaner design, and that estimate predates the current gas prices.</p>
+<p class="small">Measured on a local polkajam 0.1.29 testnet: 3.0 million gas per Ed25519 signature in refine; 28.6 thousand per order in accumulate. Details in <code>docs/THROUGHPUT.md</code>, <code>docs/GAS.md</code> and <code>docs/DESIGN.md</code> in the repository.</p>
+</div>
+</section>
+
+<section id="only-jam">
+<h2>Is this only possible on JAM?</h2>
+<div class="answer col">
+<p><strong>No.</strong> Almost everything built here can be built today on Ethereum or on Solana, and several of the pieces already run there in production. JAM offers a different combination of cost, trust and generality. That combination is still a bet: JAM is not in production, and the prototype, under today's gas rules, is slower than order books Solana already runs.</p>
+</div>
+
+<div class="col"><h3>Piece by piece</h3></div>
+<figure>
+<div class="scroll">
+<table>
+<thead><tr><th>Piece</th><th>Does it exist outside JAM?</th></tr></thead>
+<tbody>
+<tr><td>Batch auction at one price, no custody</td><td>Yes. CoW Protocol does it on Ethereum: orders signed off-chain, one price per token in each batch. The difference is who computes it: there, authorised and bonded "solvers" do, and the contract only guarantees each order's limit.</td></tr>
+<tr><td>Order book on the chain itself</td><td>Yes, and the record is sobering. Phoenix, the best public order book on Solana, went from $9.6 billion a month in March 2024 to about $1 million now, and its own team moved to private quoting. OpenBook is effectively gone. A feeless book, Manifest, did $3.3 billion in the last 30 days. Hyperliquid won with its own chain. Lighter proves the matching of orders in zero knowledge and settles on Ethereum.</td></tr>
+<tr><td>Reading Bitcoin and paying on proof</td><td>Yes, three times, and none is running. BTC Relay on Ethereum (2016) has been dormant since early 2018. Interlay on Polkadot shut down in July 2026. Atomiq, which released swaps on proof on Solana and Starknet, took every route offline in August 2026.</td></tr>
+<tr><td>Bank token with an allowlist and a freeze</td><td>Yes. USDC and USDT, the ERC-3643 standard, and Token-2022 on Solana. An issuance ceiling tied to attested reserves exists too.</td></tr>
+<tr><td>Account with a guardian, recovery and limits</td><td>Yes. Safe and Argent on Ethereum for years, ERC-4337 and EIP-7702; Squads on Solana.</td></tr>
+<tr><td>Code upgrades with a public delay</td><td>Yes. Timelocks are common practice; a Solana program can be made immutable.</td></tr>
+</tbody>
+</table>
+</div>
+<figcaption>The article said so itself: no piece is new. The thesis is all of them composed in one place.</figcaption>
+</figure>
+
+<div class="col">
+<h3>So what is actually different?</h3>
+<p>The difference lies in who redoes the computation, and in which key stands between you and the base layer.</p>
+</div>
+<figure>
+  <div class="scroll"><svg class="dg" viewBox="0 0 960 322" role="img" aria-label="Who executes the heavy computation: on Ethereum and Solana, every validator; on a rollup, one sequencer; on JAM, a few guarantors and randomly chosen auditors. Only the rollup puts an extra key between the user and the funds.">
+<text x="127" y="26" class="tb" text-anchor="middle">Ethereum, base layer</text>
+<circle cx="67" cy="56" r="7" class="dot"/>
+<circle cx="97" cy="56" r="7" class="dot"/>
+<circle cx="127" cy="56" r="7" class="dot"/>
+<circle cx="157" cy="56" r="7" class="dot"/>
+<circle cx="187" cy="56" r="7" class="dot"/>
+<circle cx="67" cy="86" r="7" class="dot"/>
+<circle cx="97" cy="86" r="7" class="dot"/>
+<circle cx="127" cy="86" r="7" class="dot"/>
+<circle cx="157" cy="86" r="7" class="dot"/>
+<circle cx="187" cy="86" r="7" class="dot"/>
+<circle cx="67" cy="116" r="7" class="dot"/>
+<circle cx="97" cy="116" r="7" class="dot"/>
+<circle cx="127" cy="116" r="7" class="dot"/>
+<circle cx="157" cy="116" r="7" class="dot"/>
+<circle cx="187" cy="116" r="7" class="dot"/>
+<circle cx="67" cy="146" r="7" class="dot"/>
+<circle cx="97" cy="146" r="7" class="dot"/>
+<circle cx="127" cy="146" r="7" class="dot"/>
+<circle cx="157" cy="146" r="7" class="dot"/>
+<circle cx="187" cy="146" r="7" class="dot"/>
+<text x="127" y="190" class="tm" text-anchor="middle">everyone re-executes everything</text>
+<text x="127" y="207" class="tm" text-anchor="middle">low ceiling per block</text>
+<text x="127" y="224" class="tm" text-anchor="middle">high fee per trade</text>
+<rect x="32" y="238" width="190" height="26" rx="13" class="chip-ok"/>
+<text x="127" y="255" class="tm" text-anchor="middle">no extra key</text>
+<text x="362" y="26" class="tb" text-anchor="middle">Ethereum rollup</text>
+<circle cx="302" cy="56" r="7" class="dot"/>
+<circle cx="332" cy="56" r="7" class="dot-o"/>
+<circle cx="362" cy="56" r="7" class="dot-o"/>
+<circle cx="392" cy="56" r="7" class="dot-o"/>
+<circle cx="422" cy="56" r="7" class="dot-o"/>
+<circle cx="302" cy="86" r="7" class="dot-o"/>
+<circle cx="332" cy="86" r="7" class="dot-o"/>
+<circle cx="362" cy="86" r="7" class="dot-o"/>
+<circle cx="392" cy="86" r="7" class="dot-o"/>
+<circle cx="422" cy="86" r="7" class="dot-o"/>
+<circle cx="302" cy="116" r="7" class="dot-o"/>
+<circle cx="332" cy="116" r="7" class="dot-o"/>
+<circle cx="362" cy="116" r="7" class="dot-o"/>
+<circle cx="392" cy="116" r="7" class="dot-o"/>
+<circle cx="422" cy="116" r="7" class="dot-o"/>
+<circle cx="302" cy="146" r="7" class="dot-o"/>
+<circle cx="332" cy="146" r="7" class="dot-o"/>
+<circle cx="362" cy="146" r="7" class="dot-o"/>
+<circle cx="392" cy="146" r="7" class="dot-o"/>
+<circle cx="422" cy="146" r="7" class="dot-o"/>
+<text x="362" y="190" class="tm" text-anchor="middle">one sequencer executes</text>
+<text x="362" y="207" class="tm" text-anchor="middle">validity proof or fraud window</text>
+<text x="362" y="224" class="tm" text-anchor="middle">cheap and fast</text>
+<rect x="267" y="238" width="190" height="26" rx="13" class="chip-bad"/>
+<text x="362" y="255" class="td" text-anchor="middle">upgrade council + bridge</text>
+<text x="597" y="26" class="tb" text-anchor="middle">Solana</text>
+<circle cx="537" cy="56" r="9" class="dot"/>
+<circle cx="567" cy="56" r="9" class="dot"/>
+<circle cx="597" cy="56" r="9" class="dot"/>
+<circle cx="627" cy="56" r="9" class="dot"/>
+<circle cx="657" cy="56" r="9" class="dot"/>
+<circle cx="537" cy="86" r="9" class="dot"/>
+<circle cx="567" cy="86" r="9" class="dot"/>
+<circle cx="597" cy="86" r="9" class="dot"/>
+<circle cx="627" cy="86" r="9" class="dot"/>
+<circle cx="657" cy="86" r="9" class="dot"/>
+<circle cx="537" cy="116" r="9" class="dot"/>
+<circle cx="567" cy="116" r="9" class="dot"/>
+<circle cx="597" cy="116" r="9" class="dot"/>
+<circle cx="627" cy="116" r="9" class="dot"/>
+<circle cx="657" cy="116" r="9" class="dot"/>
+<circle cx="537" cy="146" r="9" class="dot"/>
+<circle cx="567" cy="146" r="9" class="dot"/>
+<circle cx="597" cy="146" r="9" class="dot"/>
+<circle cx="627" cy="146" r="9" class="dot"/>
+<circle cx="657" cy="146" r="9" class="dot"/>
+<text x="597" y="190" class="tm" text-anchor="middle">everyone re-executes everything</text>
+<text x="597" y="207" class="tm" text-anchor="middle">large machines, 0.4 s blocks</text>
+<text x="597" y="224" class="tm" text-anchor="middle">ceiling per transaction</text>
+<rect x="502" y="238" width="190" height="26" rx="13" class="chip-ok"/>
+<text x="597" y="255" class="tm" text-anchor="middle">no extra key</text>
+<text x="832" y="26" class="tb" text-anchor="middle">JAM</text>
+<circle cx="772" cy="56" r="7" class="dot"/>
+<circle cx="802" cy="56" r="7" class="dot"/>
+<circle cx="832" cy="56" r="7" class="dot"/>
+<circle cx="862" cy="56" r="7" class="dot-o"/>
+<circle cx="892" cy="56" r="7" class="dot-o"/>
+<circle cx="772" cy="86" r="7" class="dot-o"/>
+<circle cx="802" cy="86" r="7" class="dot-r"/>
+<circle cx="832" cy="86" r="7" class="dot-o"/>
+<circle cx="862" cy="86" r="7" class="dot-o"/>
+<circle cx="892" cy="86" r="7" class="dot-r"/>
+<circle cx="772" cy="116" r="7" class="dot-o"/>
+<circle cx="802" cy="116" r="7" class="dot-o"/>
+<circle cx="832" cy="116" r="7" class="dot-r"/>
+<circle cx="862" cy="116" r="7" class="dot-o"/>
+<circle cx="892" cy="116" r="7" class="dot-r"/>
+<circle cx="772" cy="146" r="7" class="dot-o"/>
+<circle cx="802" cy="146" r="7" class="dot-o"/>
+<circle cx="832" cy="146" r="7" class="dot-r"/>
+<circle cx="862" cy="146" r="7" class="dot-o"/>
+<circle cx="892" cy="146" r="7" class="dot-r"/>
+<text x="832" y="190" class="tm" text-anchor="middle">a few execute the heavy work,</text>
+<text x="832" y="207" class="tm" text-anchor="middle">randomly chosen ones re-run it,</text>
+<text x="832" y="224" class="tm" text-anchor="middle">everyone applies the result</text>
+<rect x="737" y="238" width="190" height="26" rx="13" class="chip-ok"/>
+<text x="832" y="255" class="tm" text-anchor="middle">no extra key</text>
+<circle cx="27" cy="298" r="6" class="dot"/><text x="40" y="302" class="tm" text-anchor="start">executes the heavy computation</text>
+<circle cx="267" cy="298" r="6" class="dot-r"/><text x="280" y="302" class="tm" text-anchor="start">re-runs it, chosen by lottery</text>
+<circle cx="487" cy="298" r="6" class="dot-o"/><text x="500" y="302" class="tm" text-anchor="start">only checks or applies the result</text>
+</svg></div>
+  <figcaption>Twenty validators in each model. On Ethereum and Solana all of them re-execute every transaction, which forces a low ceiling on computation per transaction. On a rollup one operator executes, and safety rests on a proof, a bridge and a council that can replace the contracts. On JAM a few execute, others chosen by lottery re-run it, and everyone applies only the result.</figcaption>
+</figure>
+
+<div class="pair">
+  <div>
+    <h4>1. Heavy computation as ordinary code</h4>
+    <p>Refine gives seconds of computation per core and up to 13.8 MB of data per package. A reader of another chain, or a proof verifier, is a normal program. On Solana a transaction has a ceiling on computation and on size; on Ethereum the whole block has a few tens of millions of gas. There, verifying something large needs the network to approve a special instruction, or needs the computation wrapped in a zero-knowledge proof.</p>
+    <p><strong>The counterpoint.</strong> Wrapping in a zero-knowledge proof is already the standard route outside JAM, and it works. And checking by lottery is an economic guarantee (two thirds honest, with money at stake), weaker than "everyone re-executes" and weaker than a mathematical proof.</p>
+  </div>
+  <div>
+    <h4>2. Scale with no operator in the middle</h4>
+    <p>To get volume on Ethereum you go to a rollup, and three things appear that the article criticises: a single sequencer, a bridge contract holding everything that came in, and a council able to replace the contracts. In the surveys I found, no large rollup had reached the level at which that council acts only on a proven defect. By the article's test, that council's key moves everything. On JAM the service gets rollup-scale computation with no sequencer and no bridge to the layer below.</p>
+    <p><strong>The counterpoint.</strong> Against Solana this argument does not apply: it has no sequencer and no bridge either. And Polkadot's governance can change all of JAM; the difference is that it is a public referendum with a delay, not a multisig.</p>
+  </div>
+  <div>
+    <h4>3. Accounts and fees defined by the application</h4>
+    <p>JAM has no user account that pays a fee. Whoever runs the service buys core time, and the service decides what counts as a valid instruction. Social recovery follows from that, and so does a user who never has to buy a token to pay fees.</p>
+    <p><strong>The counterpoint.</strong> Ethereum and Solana reach the same result for the user with program accounts and sponsored fees. It is cleaner on JAM. It is not exclusive to it.</p>
+  </div>
+  <div>
+    <h4>4. "Everything in one state"</h4>
+    <p>Here the article needs an adjustment. On JAM each service has its own state, and services talk through messages that arrive later. An atomic swap between two services does not exist unless one of them holds the other's asset for a moment. That is why I put the order book, the tokens and the Bitcoin reader in a single service.</p>
+    <p><strong>The counterpoint goes against JAM.</strong> On Ethereum and Solana, different contracts call one another inside one transaction, atomically. On this specific point they are better.</p>
+  </div>
+</div>
+
+<div class="col">
+<h3>Where JAM is worse, or unknown, today</h3>
+<ul>
+<li><strong>It is not in production.</strong> The Gray Paper is at version 0.8.0, the gas model is declared provisional, and the official build tool has not been published for that version: I had to write the packer.</li>
+<li><strong>Modest measured throughput.</strong> About 290 orders per package, per core, every 6 seconds: 48 a second per core, times the cores the service buys. The limit is accumulate. On Solana a single feeless order book did $3.3 billion in the last 30 days.</li>
+<li><strong>Latency.</strong> Six-second blocks, 12 to 18 seconds until the effect shows, a little more to finalise. Solana closes blocks in 0.4 seconds.</li>
+<li><strong>The money is elsewhere.</strong> By the article's own figures, 47% of stablecoins are on Ethereum and 32% on Tron. On JAM, none. Wallets, liquidity, auditors and regulatory precedent are with the others.</li>
+</ul>
+
+<h3>Why not Solana?</h3>
+<p>It is the strongest alternative for the order book. For a product that had to launch next year, I would not rule it out. One caveat from its own history: public order books for the major pairs lost there to private market makers, as Phoenix shows. What counts against it, judged only by the article's goals:</p>
+<ul>
+<li>Heavy verification runs into the per-transaction ceiling. To read other chains without a committee, Solana depends on zero-knowledge proofs or on new instructions. The most used bridge there, Wormhole, is a committee of 19 guardians, the pattern the article rejects.</li>
+<li>Validators need large machines, which concentrates operation, and the network has a history of outages.</li>
+<li>Programs usually keep an upgrade authority in a multisig. That is solved by removing the authority, like the administrator here.</li>
+</ul>
+<p>None of these points rules the project out.</p>
+
+<h3>Why not Ethereum?</h3>
+<p>On the base layer the trust model is the right one and contracts compose atomically. The problem is cost and throughput: with a fee of dollars per trade, it does not serve retail trades of R$ 100. On a rollup the cost falls, and the sequencer, the council and the bridge come back, with liquidity split between rollups. A rollup that proves the matching of orders, like Lighter, is the closest relative of "re-run by strangers": a mathematical guarantee instead of an economic one, with a single operator and, as of May 2026, contracts the team could still upgrade.</p>
+
+<h3>What I would say instead of "only on JAM"</h3>
+<p>JAM is the bet that one layer can offer cheap, checked computation, readers of other chains written as ordinary code, and no operator's key in the path. If the bet pays off, with a live network, final gas rules and real throughput, this design ends up with fewer trusted parts there than on any alternative. Today, anyone wanting to launch with real money would get there sooner on Solana or on a rollup, accepting the extra keys.</p>
+<p>In the article, the sentence "the first base layer I know of on which the one-key-one-person property can be kept all the way" promises more than that. A defensible version would say it is the layer on which that property needs the fewest trusted parts.</p>
+</div>
+</section>
+
+<section id="lessons">
+<h2>What earlier attempts teach</h2>
+<div class="col">
+<p>Every piece has been tried elsewhere. Most of the attempts are no longer running, and almost none failed for a technical reason.</p>
+</div>
+<figure>
+<div class="scroll">
+<table>
+<thead><tr><th>Project</th><th>Outcome</th><th>Main cause</th></tr></thead>
+<tbody>
+<tr><td>Phoenix, order book on Solana</td><td>Worked technically; volume fell from $9.6 billion a month to about $1 million</td><td>Public quotes lost to private, oracle-driven quoting. Updating a quote cost up to 300,000 compute units against 143 for a private maker</td></tr>
+<tr><td>Serum, order book on Solana</td><td>Deposits fell from $108 million to $0.4 million in two weeks, November 2022</td><td>The upgrade key was held by FTX. Nobody showed it was misused; suspicion was enough</td></tr>
+<tr><td>OpenBook, the community fork</td><td>The rescue worked, the venue did not</td><td>No funded team and no fee; it was plumbing for another protocol, which stopped needing it</td></tr>
+<tr><td>Interlay, bitcoin on Polkadot</td><td>Shut down July 2026; never held more than about 90 BTC</td><td>135% collateral per bitcoin, paid for with token inflation. The wrapped bitcoin left on other chains can no longer be redeemed</td></tr>
+<tr><td>BTC Relay, Bitcoin reader on Ethereum</td><td>Dormant since early 2018</td><td>Relayers spent about 130 ETH on gas and earned about 1.2 ETH in fees</td></tr>
+<tr><td>Atomiq, bitcoin swaps on proof</td><td>Offline since August 2026; escrows never held more than $0.4 million</td><td>A small team under attack through its off-chain infrastructure. No funds were lost</td></tr>
+</tbody>
+</table>
+</div>
+<figcaption>Figures from DefiLlama's public data and from the BTC Relay contract's own transaction list, collected on 16 November 2026. The full case studies, with sources, are in <code>docs/PRIOR-ART.md</code>.</figcaption>
+</figure>
+<div class="col">
+<h3>What JAMX should do differently because of them</h3>
+<ul>
+<li><strong>Whoever is owed money carries the proof.</strong> BTC Relay paid per lookup and starved. Here there is no relayer role: the seller, or anyone, brings the missing headers with the receipt. That part is built.</li>
+<li><strong>Keep a bitcoin deal's time by Bitcoin's clock.</strong> With a deadline on the host chain's clock, a seller who paid on time loses whenever nobody has carried the headers. Read off Bitcoin's own block times, the deadline cannot pass until someone carries those headers, and they are the very ones that make the payment provable. This was the most valuable lesson, and it is now built.</li>
+<li><strong>No wrapped bitcoin and no vaults.</strong> Interlay's shutdown stranded its token. Here bitcoin never enters JAM, and if the team vanished every deal could still be closed by anyone after its deadline. Built.</li>
+<li><strong>Do not expect market makers to rest quotes for six seconds.</strong> Phoenix had 0.4-second blocks and lost. One price per round removes the race to be first; it does not remove stale quotes. Orders pegged to a reference price, and cancels applied before the round, are the two mechanisms the successful venues use. Not built.</li>
+<li><strong>Aim at flow that does not mind waiting.</strong> Bitcoin swaps already take an hour. A bank's token has no other venue to be stale against. Large trades want protection from front-running more than speed.</li>
+<li><strong>Publish the upgrade key and make it wait.</strong> Serum is the case. The administrator and the delay are compiled into the code here, and the role can be renounced. Built; a real delay still has to be chosen.</li>
+<li><strong>Liquidity is brought, not attracted.</strong> Token rewards bought Interlay 90 BTC and a worthless token. What worked elsewhere was a named market maker run in the open.</li>
+</ul>
+</div>
+</section>
+
+<section id="missing">
+<h2>What is missing before it is a product</h2>
+<div class="col">
+<p>The prototype proves the mechanism. A product needs five things it does not have, listed by how little they depend on you.</p>
+
+<h3>What is done</h3>
+<ul class="plan">
+<li><span class="tag done">done</span>A complete service running on a local testnet: accounts with rules, issuer tokens, batch auction, Bitcoin reader, payment on proof, escrow with an arbiter, upgrades with a delay.</li>
+<li><span class="tag done">done</span>130 tests, with conservation of balances checked after every operation and the Bitcoin code tested against real blocks and transactions.</li>
+<li><span class="tag done">done</span>One adversarial review. A second reviewer was asked to break the first version and found sixteen ways, one of them a way for a buyer to keep the bitcoin, the reais and the seller's bond. All sixteen are fixed and each is now a test. The list is in <code>docs/SECURITY.md</code>.</li>
+<li><span class="tag done">done</span>A command-line tool, a demonstration script and design documentation.</li>
+</ul>
+
+<h3>1. JAM has to exist</h3>
+<ul class="plan">
+<li><span class="tag ext">out of your hands</span>A main network, specification 1.0 and a final gas model. The throughput figures here hold for today's rules.</li>
+<li><span class="tag ext">out of your hands</span>A market for core time with a known price, to know what each round costs.</li>
+<li><span class="tag todo">missing</span>Running on the public test network, across different implementations (Jamixir included), instead of six nodes on one machine.</li>
+</ul>
+
+<h3>2. Engineering of the service</h3>
+<ul class="plan">
+<li><span class="tag todo">missing</span><strong>Privacy.</strong> Balances and orders are public. The article calls proving a balance without revealing it "the condition of existence" for a bank to take part. Nothing here addresses it.</li>
+<li><span class="tag todo">missing</span><strong>Fees and deposits.</strong> Today the service pays for everybody's storage, and anyone creates accounts, assets and trades for free. Without a charge it is a target for spam.</li>
+<li><span class="tag todo">missing</span><strong>Throughput.</strong> About 290 orders per package now. A fixed-layout record read in place should reach about 1,000. Beyond that: many balances per storage item, and then giving refine a proof of the balances so that accumulate applies only the net result.</li>
+<li><span class="tag todo">missing</span><strong>Orders pegged to a reference price</strong>, with cancels applied before the round. This comes from the cases above; without it, market makers have little reason to quote.</li>
+<li><span class="tag todo">missing</span><strong>A bridge to where the money is.</strong> A reader for Ethereum and for Tron, and the contract on the other side. Without it, no USDT and no USDC.</li>
+<li><span class="tag todo">missing</span><strong>Bitcoin on the real network.</strong> A true starting point, an incentive for whoever carries the headers, pruning of old ones, and a policy for long reorganisations.</li>
+<li><span class="tag todo">missing</span><strong>A network of those who collect the notes.</strong> How orders reach them, how to stop any one of them censoring, several per market.</li>
+<li><span class="tag todo">missing</span>Trades with both legs outside JAM (bitcoin for Pix), Lightning for small amounts, and conversion at par between different banks' vouchers.</li>
+</ul>
+
+<h3>3. Security</h3>
+<ul class="plan">
+<li><span class="tag todo">missing</span>An external audit, fuzzing and a bug bounty. The automated review above found sixteen flaws in a first version its author believed correct. That is a reason to expect more, not fewer.</li>
+<li><span class="tag todo">missing</span>Deciding who the code administrator is: nobody, or a governance body, and with what delay. In the demonstration the delay is one minute.</li>
+</ul>
+
+<h3>4. Product</h3>
+<ul class="plan">
+<li><span class="tag todo">missing</span>The application that looks like an exchange: order book, charts, history. Today there is only a command line.</li>
+<li><span class="tag todo">missing</span>A real wallet, with the key on the user's device and a flow for inviting guardians. The demonstration's keys are derived from names and protect nothing.</li>
+<li><span class="tag todo">missing</span>Market makers and initial liquidity. Without them the book is empty. The cases suggest one named maker, run in the open, before any reward scheme.</li>
+</ul>
+
+<h3>5. The bank and the regulation</h3>
+<ul class="plan">
+<li><span class="tag ext">not software</span>A regulated institution that issues the digital real, with reserves where the law requires and access to Pix.</li>
+<li><span class="tag ext">not software</span>Authorisation to operate with virtual assets, identity checks and anti-money-laundering controls, and a legal opinion on how the token is classified.</li>
+<li><span class="tag ext">not software</span>Independent auditors willing to attest reserves with their own signature, and someone accountable for operating the Pix arbiter.</li>
+</ul>
+<p>This last part is the hardest and the slowest. The article already said it: this is a company, not a protocol.</p>
+</div>
+</section>
+
+<section id="sources">
+<h2>Sources, and what was verified</h2>
+<div class="col">
+<p class="small">Verified today by search: the auction design of <a href="https://docs.cow.fi/cow-protocol/reference/core/auctions/competition-rules">CoW Protocol</a>; Lighter, from the <a href="https://blog.zksecurity.xyz/posts/lighter-xyz/">zkSecurity audit</a> and from <a href="https://l2beat.com/publications/exchange-risk-and-how-lighter-escapes-it">L2BEAT</a>; SolLightning/Atomiq, from <a href="https://www.npmjs.com/package/sollightning-sdk">its own package</a> and a <a href="https://www.starknet.io/blog/atomiq-wbtc-on-starknet/">Starknet post</a>; the 100 million compute-unit block limit on <a href="https://solana.com/upgrades/100m-cu-blocks">Solana</a> and the new transaction format, which <a href="https://www.quicknode.com/blog/solana-v1-transactions-explained">one source</a> gave as scheduled for September 2026 and which I did not confirm; and the stage of the rollups, where secondary sources <a href="https://www.theblock.co/post/383329/2026-layer-2-outlook">disagree</a> on which are at stage 1 and agree that no large one has reached stage 2. Check l2beat.com directly before citing.</p>
+<p class="small">From my prior knowledge, not re-verified today: Phoenix, OpenBook, Hyperliquid, dYdX, Safe, Argent, Squads, Token-2022, ERC-3643, Wormhole's 19 guardians, and Solana's ceiling of 1.4 million compute units per transaction.</p>
+<p class="small">Case studies: volumes and deposits from DefiLlama's public API, the BTC Relay figures from the contract's own transactions, both collected on 16 November 2026; Phoenix's quoting costs from <a href="https://www.helius.dev/blog/solanas-proprietary-amm-revolution">Helius</a>; Serum's key from <a href="https://www.theblock.co/post/186499/solana-liquidity-hub-serum-to-be-forked-after-possible-compromise-in-ftx-hack">The Block</a>; Interlay from <a href="https://polkadot.subsquare.io/referenda/714">Polkadot referendum 714</a> and <a href="https://bifrost.subsquare.io/posts/210">Bifrost's governance</a>; BTC Relay from <a href="https://github.com/ethereum/btcrelay/issues/50">its issue 50</a>; Atomiq's outage from <a href="https://cryptobriefing.com/starknet-bitcoin-bridging-atomiq-outage/">Crypto Briefing</a>. Interlay's own wind-down post no longer resolves and was read through excerpts.</p>
+<p class="small">From Gray Paper 0.8.0, read in the text: 5 billion gas of refine and 10 million of accumulate per package, 48 KiB of output, 13.8 MB of input, 341 cores, an average of 30 validators auditing each package. Measured by me on the local testnet: gas costs and timings.</p>
+</div>
+</section>
+</div>
+</body>
+</html>

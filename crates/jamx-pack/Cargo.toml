@@ -1,0 +1,14 @@
+[package]
+name = "jamx-pack"
+version = "0.1.0"
+edition = "2021"
+description = "Packs a linked .polkavm guest program into a JAM (GP 0.8.0) service blob"
+license = "Apache-2.0"
+publish = false
+
+[dependencies]
+jam-program-blob-common = { version = "=0.1.29" }
+polkavm-linker = "=0.37.0"
+codec = { package = "jam-codec", version = "0.1.1" }
+
+[workspace]

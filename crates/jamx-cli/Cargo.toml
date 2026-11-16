@@ -1,0 +1,21 @@
+[package]
+name = "jamx-cli"
+description = "Wallet, bundler and carrier tools for the JAMX service"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+publish = false
+
+[[bin]]
+name = "jamx"
+path = "src/main.rs"
+
+[dependencies]
+jamx-core = { path = "../jamx-core" }
+clap = { version = "4", features = ["derive", "env"] }
+tungstenite = "0.24"
+serde_json = "1"
+base64 = "0.22"
+hex = "0.4"
+libc = "0.2"

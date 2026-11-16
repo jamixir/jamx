@@ -1,0 +1,19 @@
+[package]
+name = "jamx-hello"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+jam-pvm-common = { version = "=0.1.29", default-features = false, features = ["service", "logging"] }
+jam-types = { version = "=0.1.29", default-features = false }
+polkavm-derive = "=0.37.0"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+debug = false
+
+[workspace]

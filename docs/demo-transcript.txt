@@ -1,0 +1,460 @@
+
+== Build ==
+../run/jamx.jam: 271625 bytes (ro 9648 / rw 20 / stack 262144 / code+jt 261909)
+
+== Deploy ==
+   service id 0000000e; waiting for its code to be finalized
+$ jamx show config
+service 0000000e
+  no state yet: nothing has been accumulated. The administrator and upgrade delay
+  compiled into the code are recorded when the first work item is.
+
+== 1. The last bank: an issuer that holds reserves and nothing else ==
+   The bank's token is permissioned (holding it means passing the bank's checks) and
+   freezable (with every use logged). Two independent auditors cap what can exist.
+$ jamx create-token bank BRL --permissioned --freezable --attestor auditor1 --attestor auditor2 --threshold 2
+asset id will be 1
+accumulated at slot 9849636: ok
+$ jamx -q attest auditor1 1 10000000
+queued (1 item(s) waiting; send with `jamx submit`)
+$ jamx -q attest auditor2 1 8000000
+queued (2 item(s) waiting; send with `jamx submit`)
+   An account holds only what it has accepted: each customer opens the relationship,
+   and the bank then approves it.
+$ jamx -q accept bob 1
+queued (3 item(s) waiting; send with `jamx submit`)
+$ jamx -q accept alice 1
+queued (4 item(s) waiting; send with `jamx submit`)
+$ jamx -q accept carol 1
+queued (5 item(s) waiting; send with `jamx submit`)
+$ jamx -q accept dave 1
+queued (6 item(s) waiting; send with `jamx submit`)
+$ jamx -q issuer bank 1 allow bob
+queued (7 item(s) waiting; send with `jamx submit`)
+$ jamx -q issuer bank 1 allow alice
+queued (8 item(s) waiting; send with `jamx submit`)
+$ jamx -q issuer bank 1 allow carol
+queued (9 item(s) waiting; send with `jamx submit`)
+$ jamx -q issuer bank 1 allow dave
+queued (10 item(s) waiting; send with `jamx submit`)
+$ jamx -q mint bank 1 bob 5000000
+queued (11 item(s) waiting; send with `jamx submit`)
+$ jamx -q mint bank 1 alice 1000000
+queued (12 item(s) waiting; send with `jamx submit`)
+$ jamx -q mint bank 1 carol 1000000
+queued (13 item(s) waiting; send with `jamx submit`)
+$ jamx submit
+sending 13 item(s), 2173 bytes
+accumulated at slot 9849638: ok, ok, ok, ok, ok, ok, ok, ok, ok, ok, ok, ok, ok
+$ jamx show asset 1
+asset 1: BRL (issuer bank)
+  token, 2 decimals, supply 7000000, mint cap 8000000
+  permissioned: true, freezable: true (freeze log: 0 entries)
+  attestor auditor1 vouches for 10000000
+  attestor auditor2 vouches for 8000000
+  cap = the largest figure at least 2 attestor(s) vouch for
+   The auditors vouch for 8,000,000 between them; 7,000,000 exist. The bank cannot mint past that:
+$ jamx mint bank 1 bob 1500000   (must be refused)
+accumulated at slot 9849640: over the mint cap
+   And nobody without the bank's approval can receive its token:
+$ jamx transfer bob 1 stranger 100   (must be refused)
+accumulated at slot 9849642: not allowed to hold the asset
+
+== 2. The order book with no operator ==
+   A second issuer's dollar token trades against the real. Orders are signed off-chain;
+   anyone can bundle them. One round, one price.
+$ jamx -q create-token usbank USDX
+asset id will be 2
+queued (1 item(s) waiting; send with `jamx submit`)
+$ jamx -q accept alice 2
+queued (2 item(s) waiting; send with `jamx submit`)
+$ jamx -q accept carol 2
+queued (3 item(s) waiting; send with `jamx submit`)
+$ jamx -q mint usbank 2 alice 4000
+queued (4 item(s) waiting; send with `jamx submit`)
+$ jamx -q mint usbank 2 carol 3000
+queued (5 item(s) waiting; send with `jamx submit`)
+$ jamx submit
+sending 5 item(s), 773 bytes
+accumulated at slot 9849644: ok, ok, ok, ok, ok
+$ jamx order bob buy 2 1 3000 5.60
+order signed and added to the local book of market 2/1 (nonce 2); nothing is on-chain yet
+$ jamx order dave buy 2 1 2000 5.40
+order signed and added to the local book of market 2/1 (nonce 1); nothing is on-chain yet
+$ jamx order alice sell 2 1 2500 5.30
+order signed and added to the local book of market 2/1 (nonce 2); nothing is on-chain yet
+$ jamx order carol sell 2 1 2000 5.50
+order signed and added to the local book of market 2/1 (nonce 2); nothing is on-chain yet
+$ jamx orders 2 1
+bob        buy          3000 @ 560/100  nonce 2 expires 9851644
+dave       buy          2000 @ 540/100  nonce 1 expires 9851644
+alice      sell         2500 @ 530/100  nonce 2 expires 9851644
+carol      sell         2000 @ 550/100  nonce 2 expires 9851644
+   The bundler is nobody special: it lists orders and collects the fee the orders allow.
+$ jamx -q accept bundler 1
+queued (1 item(s) waiting; send with `jamx submit`)
+$ jamx -q issuer bank 1 allow bundler
+queued (2 item(s) waiting; send with `jamx submit`)
+$ jamx submit
+sending 2 item(s), 343 bytes
+accumulated at slot 9849646: ok, ok
+$ jamx batch 2 1 --builder bundler --fee-bps 10
+bundling 4 order(s) of market 2/1
+accumulated at slot 9849648: ok
+cleared at 111/20 (5.550000 quote per base); market total: 1 round(s), volume 3000
+$ jamx show account bob
+account bob (ba894295a0f89c6d133dfdf0877962f0f42da808a69eaf598166a617c5991c85)
+  asset 1   BRL               4983334  allowed
+  asset 2   USDX                 3000  
+  nonce floor 0
+$ jamx show account alice
+account alice (4c9708fecb63c82e443a2642871c1f76445cd7b733a31a7e53353022afec7ad7)
+  asset 1   BRL               1013862  allowed
+  asset 2   USDX                 1500  
+  nonce floor 0
+$ jamx show account bundler
+account bundler (a0f81451fd840335604671a7fc87c712772d37f793ed9413e2f10d90ee3a3b6f)
+  asset 1   BRL                    31  allowed
+  nonce floor 0
+   Bundling the same signed orders again does nothing: they are spent.
+
+== 3. Buying bitcoin with reais, with nobody holding both legs ==
+   A local Bitcoin regtest chain stands in for Bitcoin. JAM never connects to it:
+   headers and receipts are carried in and checked by arithmetic.
+$ jamx btc init demo
+chain 'demo' created; genesis b4f0663a3c2404cff0ab2d46c1b53a9972507f4d014143af9da1d6ee2500492f
+   A deal keeps time by Bitcoin's own clock, not JAM's: the seller has two hours, read off
+   the timestamps of Bitcoin's blocks, to get the payment mined. (Each block of this local
+   chain is dated ten minutes after the one before, however fast it is mined here.)
+$ jamx create-btc bundler BTC --chain demo --confirmations 3 --pay-secs 7200 --grace-blocks 2 --bond-bps 1000 --min-deal 1000
+asset id will be 3
+accumulated at slot 9849650: ok
+$ jamx show asset 3
+asset 3: BTC (issuer bundler)
+  external, proven by block headers and Merkle receipts, 3 confirmations
+  payment due within 7200 s of the deal, by Bitcoin's clock; a deal without proof fails 5 blocks after that
+  seller's bond 10%, 5600 slots until an open deal is undone without penalty, smallest deal 1000
+   The service opens deals once it has seen ten blocks past its starting header:
+$ jamx btc mine demo 10
+chain 'demo' is now at height 10
+$ jamx btc relay demo 3
+carrying 10 header(s), heights 1..=10
+accumulated at slot 9849652: ok
+   Bob wants 0.001 BTC at R$ 600,000 per coin, delivered to his own wallet. Carol has the coins.
+$ jamx order bob buy 3 1 100000 0.6 --deliver bob-wallet
+order signed and added to the local book of market 3/1 (nonce 3); nothing is on-chain yet
+$ jamx order carol sell 3 1 100000 0.6
+order signed and added to the local book of market 3/1 (nonce 3); nothing is on-chain yet
+$ jamx batch 3 1 --builder bundler
+bundling 2 order(s) of market 3/1
+accumulated at slot 9849654: ok
+cleared at 3/5 (0.600000 quote per base); market total: 1 round(s), volume 100000
+$ jamx show deals
+deal 1
+  bob locked 60000 of asset 1; carol must deliver 100000 of external asset 3 and posted a bond of 6000
+  deliver to: 00144103c61e6dbe2d4f11e4d049db5f8d7cdab92b27
+  payment must carry tag 1ce83e48bcc66ac5d34251dc8872b316a420107856187f9271e5507a4aabbd37
+  payment must be mined above height 10 and before Unix time 1794837924 by Bitcoin's clock
+  the service has seen the outside chain up to height 10
+  if the header chain stalls, the deal is undone without penalty after slot 9855254 (5600 slots left)
+   Bob's reais are locked in the deal with Carol's bond. Carol now pays from her own wallet.
+$ jamx btc pay demo 1
+paid 100000 sats in block 11 of chain 'demo' (from the seller's own wallet; JAM is not involved)
+   JAM has not seen that block yet, so the receipt means nothing:
+$ jamx btc claim demo 1   (must be refused)
+payment found in block 11, transaction 1, output 0; carrying the receipt
+accumulated at slot 9849656: not found
+$ jamx btc relay demo 3
+carrying 1 header(s), heights 11..=11
+accumulated at slot 9849658: ok
+   One confirmation is not three:
+$ jamx btc claim demo 1   (must be refused)
+payment found in block 11, transaction 1, output 0; carrying the receipt
+accumulated at slot 9849660: not confirmed deeply enough
+$ jamx btc mine demo 2
+chain 'demo' is now at height 13
+$ jamx btc relay demo 3
+carrying 2 header(s), heights 12..=13
+accumulated at slot 9849662: ok
+$ jamx show chain 3
+header chain of asset 3
+  tip 662ac8b3271fc5d94dcc8c75e70af0f7e28069ec8613f550c31c612759fd8c1d at height 13
+  total work since the checkpoint (height 0): 26
+  tip time 1794838488, difficulty bits 0x207fffff
+   Three blocks deep. Anyone can carry the receipt; the reais go to Carol.
+$ jamx btc claim demo 1
+payment found in block 11, transaction 1, output 0; carrying the receipt
+accumulated at slot 9849664: ok
+$ jamx show deals
+no open deals
+$ jamx show account carol
+account carol (c29d0e44572bf7cb5ed5398ec04d7605eadb434540cb4cd5f470662604d454b8)
+  asset 1   BRL               1062773  allowed
+  asset 2   USDX                 2500  
+  nonce floor 0
+  resting order nonce 2: 500 filled, expires 9851644
+   Next, a seller who never pays. Nothing on JAM's clock can time the deal out: only
+   Bitcoin's own blocks can, and whoever wants the refund has to carry them in. Those are
+   the same headers that would have proved a payment, had there been one.
+$ jamx order bob buy 3 1 50000 0.6 --deliver bob-wallet
+order signed and added to the local book of market 3/1 (nonce 4); nothing is on-chain yet
+$ jamx order carol sell 3 1 50000 0.6
+order signed and added to the local book of market 3/1 (nonce 4); nothing is on-chain yet
+$ jamx batch 3 1 --builder bundler
+bundling 2 order(s) of market 3/1
+accumulated at slot 9849666: ok
+cleared at 3/5 (0.600000 quote per base); market total: 2 round(s), volume 150000
+$ jamx show deals
+deal 2
+  bob locked 30000 of asset 1; carol must deliver 50000 of external asset 3 and posted a bond of 3000
+  deliver to: 00144103c61e6dbe2d4f11e4d049db5f8d7cdab92b27
+  payment must carry tag 82857ebbc592563ed08755f2dcb0cfec217e1b9acba434624d0f376e0bc146fd
+  payment must be mined above height 13 and before Unix time 1794837996 by Bitcoin's clock
+  the service has seen the outside chain up to height 13
+  if the header chain stalls, the deal is undone without penalty after slot 9855266 (5600 slots left)
+$ jamx timeout 2   (must be refused)
+accumulated at slot 9849668: too early
+   Bitcoin moves on by more than two hours of its own time. Until someone carries the
+   headers in, the service knows nothing of it:
+$ jamx btc mine demo 20
+chain 'demo' is now at height 33
+$ jamx timeout 2   (must be refused)
+accumulated at slot 9849668: too early
+$ jamx btc relay demo 3
+carrying 20 header(s), heights 14..=33
+accumulated at slot 9849670: ok
+$ jamx timeout 2
+accumulated at slot 9849670: ok
+   Bob has his reais back, with Carol's bond:
+$ jamx show account bob
+account bob (ba894295a0f89c6d133dfdf0877962f0f42da808a69eaf598166a617c5991c85)
+  asset 1   BRL               4926334  allowed
+  asset 2   USDX                 3000  
+  nonce floor 0
+
+== 4. Pix, with an arbiter who can reach one trade ==
+   Alice sells dollar tokens for reais sent by Pix. Her tokens wait in the deal; Dave pays
+   by Pix and posts a bond. The oracle only says whether the Pix arrived.
+$ jamx -q accept dave 2
+queued (1 item(s) waiting; send with `jamx submit`)
+$ jamx -q mint usbank 2 dave 500
+queued (2 item(s) waiting; send with `jamx submit`)
+$ jamx -q create-oracle bundler PIX --oracle pix-oracle --bond-bps 500 --window 16 --min-deal 100
+asset id will be 4
+queued (3 item(s) waiting; send with `jamx submit`)
+$ jamx submit
+sending 3 item(s), 505 bytes
+accumulated at slot 9849672: ok, ok, ok
+   Market PIX/USDX: 5,600 centavos (R$ 56) for 10 dollar tokens, i.e. 5 token-cents per 28 centavos.
+$ jamx order alice buy 4 2 5600 5/28 --deliver alice-pix-key
+order signed and added to the local book of market 4/2 (nonce 3); nothing is on-chain yet
+$ jamx order dave sell 4 2 5600 5/28
+order signed and added to the local book of market 4/2 (nonce 3); nothing is on-chain yet
+$ jamx batch 4 2 --builder bundler
+bundling 2 order(s) of market 4/2
+accumulated at slot 9849674: ok
+cleared at 5/28 (0.178571 quote per base); market total: 1 round(s), volume 5600
+$ jamx show deals
+deal 3
+  alice locked 1000 of asset 2; dave must deliver 5600 of external asset 4 and posted a bond of 50
+  deliver to: 0014c4ad56e7a7dfbef01c66dca6ec55f4e13703fa5c
+  deadline slot 9849690 (16 slots left)
+   A stranger's word is worth nothing; the oracle's settles this one deal:
+$ jamx oracle-attest stranger 3 paid   (must be refused)
+accumulated at slot 9849676: unauthorized
+$ jamx oracle-attest pix-oracle 3 paid
+accumulated at slot 9849678: ok
+$ jamx show account dave
+account dave (e21e1822956f9fc54255e0bdfb78b1cf431a293bc756f348a31a85fc07c61ca7)
+  asset 1   BRL                     0  allowed
+  asset 2   USDX                 1500  
+  nonce floor 0
+   Next, a buyer who never sends the Pix. After the deadline anyone can close the deal:
+$ jamx order alice buy 4 2 2800 5/28 --deliver alice-pix-key
+order signed and added to the local book of market 4/2 (nonce 4); nothing is on-chain yet
+$ jamx order dave sell 4 2 2800 5/28
+order signed and added to the local book of market 4/2 (nonce 4); nothing is on-chain yet
+$ jamx batch 4 2 --builder bundler
+bundling 2 order(s) of market 4/2
+accumulated at slot 9849680: ok
+cleared at 5/28 (0.178571 quote per base); market total: 2 round(s), volume 8400
+$ jamx timeout 4   (must be refused)
+accumulated at slot 9849682: too early
+   waiting for the deadline (about 100 seconds)
+$ jamx wait 17
+slot 9849699
+$ jamx timeout 4
+accumulated at slot 9849701: ok
+   Alice has her tokens back, plus Dave's bond:
+$ jamx show account alice
+account alice (4c9708fecb63c82e443a2642871c1f76445cd7b733a31a7e53353022afec7ad7)
+  asset 1   BRL               1013862  allowed
+  asset 2   USDX                  525  
+  nonce floor 0
+
+== 5. Custody without a custodian: a friend who can freeze but not spend ==
+   A freeze lasts 20 slots here and weakening changes wait 6 (in earnest: days). An account
+   that adds a protection without choosing a delay is given one of a day.
+$ jamx -q policy alice freeze-slots 20
+queued (1 item(s) waiting; send with `jamx submit`)
+$ jamx -q policy alice delay 6
+queued (2 item(s) waiting; send with `jamx submit`)
+$ jamx -q policy alice guardian friend
+queued (3 item(s) waiting; send with `jamx submit`)
+$ jamx -q policy alice limit 1 50000
+queued (4 item(s) waiting; send with `jamx submit`)
+$ jamx -q accept thief 1
+queued (5 item(s) waiting; send with `jamx submit`)
+$ jamx -q issuer bank 1 allow thief
+queued (6 item(s) waiting; send with `jamx submit`)
+$ jamx submit
+sending 6 item(s), 941 bytes
+accumulated at slot 9849703: ok, ok, ok, ok, ok, ok
+$ jamx show account alice
+account alice (4c9708fecb63c82e443a2642871c1f76445cd7b733a31a7e53353022afec7ad7)
+  asset 1   BRL               1013862  allowed
+  asset 2   USDX                  525  
+  nonce floor 0
+  key alice (owner)
+  guardian (can freeze, cannot spend): friend
+  security delay 6 slots; freeze lasts 20 slots
+  daily limit on asset 1: 50000 (spent 0)
+   Suppose Alice's key is stolen. The daily limit holds the thief to R$ 500:
+$ jamx transfer alice 1 thief 50000
+accumulated at slot 9849705: ok
+$ jamx transfer alice 1 thief 1   (must be refused)
+accumulated at slot 9849707: over the daily limit
+   The thief tries to lift the limit and get rid of the friend. Both changes are queued, not applied:
+$ jamx -q policy alice limit 1 none
+queued (1 item(s) waiting; send with `jamx submit`)
+$ jamx -q policy alice guardian none
+queued (2 item(s) waiting; send with `jamx submit`)
+$ jamx submit
+sending 2 item(s), 280 bytes
+accumulated at slot 9849709: ok, ok
+$ jamx show account alice
+account alice (4c9708fecb63c82e443a2642871c1f76445cd7b733a31a7e53353022afec7ad7)
+  asset 1   BRL                963862  allowed
+  asset 2   USDX                  525  
+  nonce floor 0
+  key alice (owner)
+  guardian (can freeze, cannot spend): friend
+  security delay 6 slots; freeze lasts 20 slots
+  daily limit on asset 1: 50000 (spent 50000)
+  queued change #0, applicable at slot 9849715: SetLimit { asset: 1, per_day: None }
+  queued change #1, applicable at slot 9849715: SetGuardian(None)
+   The friend freezes the account. He cannot move a centavo of it; he can stop everything:
+$ jamx --key friend transfer alice 1 friend 1   (must be refused)
+accumulated at slot 9849711: unauthorized
+$ jamx freeze friend alice
+accumulated at slot 9849713: ok
+$ jamx transfer alice 1 thief 1   (must be refused)
+accumulated at slot 9849715: frozen
+$ jamx policy-exec alice 0   (must be refused)
+accumulated at slot 9849717: frozen
+   Frozen, the account can still do one thing: drop what the thief queued.
+$ jamx policy-cancel alice 1
+accumulated at slot 9849719: ok
+$ jamx policy-cancel alice 0
+accumulated at slot 9849721: ok
+$ jamx show account alice
+account alice (4c9708fecb63c82e443a2642871c1f76445cd7b733a31a7e53353022afec7ad7)
+  asset 1   BRL                963862  allowed
+  asset 2   USDX                  525  
+  nonce floor 0
+  key alice (owner)
+  guardian (can freeze, cannot spend): friend
+  security delay 6 slots; freeze lasts 20 slots
+  FROZEN until slot 9849733 (now 9849721)
+  daily limit on asset 1: 50000 (spent 50000)
+
+== 6. Social recovery: the account stays, the key changes ==
+   (On a second account, so the freeze above keeps holding.)
+$ jamx policy bob recovery --threshold 2 --delay 6 guardian1 guardian2 guardian3
+accumulated at slot 9849723: ok
+   Bob loses his key. Two of his three guardians vouch for a new one.
+$ jamx -q recover guardian1 bob bob-new-phone
+queued (1 item(s) waiting; send with `jamx submit`)
+$ jamx -q recover guardian2 bob bob-new-phone
+queued (2 item(s) waiting; send with `jamx submit`)
+$ jamx submit
+sending 2 item(s), 403 bytes
+accumulated at slot 9849725: ok, ok
+$ jamx show account bob
+account bob (ba894295a0f89c6d133dfdf0877962f0f42da808a69eaf598166a617c5991c85)
+  asset 1   BRL               4926334  allowed
+  asset 2   USDX                 3000  
+  nonce floor 0
+  key bob (owner)
+  recovery: 2 of [guardian1, guardian2, guardian3], delay 6 slots
+  recovery in progress: votes [#0→bob-new-phone, #1→bob-new-phone], takes effect at 9849731
+  security delay 14400 slots; freeze lasts 100800 slots
+$ jamx recovery-exec bob   (must be refused)
+accumulated at slot 9849727: too early
+   waiting out the recovery delay (about 40 seconds)
+$ jamx wait 7
+slot 9849734
+$ jamx recovery-exec bob
+accumulated at slot 9849736: ok
+   Same account, same balance, new key. The old key is nobody now:
+$ jamx transfer bob 1 carol 1   (must be refused)
+accumulated at slot 9849738: unauthorized
+$ jamx --key bob-new-phone transfer bob 1 carol 1000
+accumulated at slot 9849740: ok
+
+== 7. The issuer's freeze button, on the public record ==
+$ jamx issuer bank 1 freeze carol --reason court order 123/2026
+accumulated at slot 9849742: ok
+$ jamx transfer carol 1 bob 1   (must be refused)
+accumulated at slot 9849744: frozen
+$ jamx show asset 1
+asset 1: BRL (issuer bank)
+  token, 2 decimals, supply 7000000, mint cap 8000000
+  permissioned: true, freezable: true (freeze log: 1 entries)
+  attestor auditor1 vouches for 10000000
+  attestor auditor2 vouches for 8000000
+  cap = the largest figure at least 2 attestor(s) vouch for
+   The bank can stop its own liability from moving. It has no operation that takes it,
+   and no power at all over Carol's dollar tokens:
+$ jamx transfer carol 2 bob 10
+accumulated at slot 9849746: ok
+
+== 8. The upgrade key announces itself and waits ==
+$ jamx propose-upgrade stranger ../run/jamx-next.jam   (must be refused)
+code hash b3921c899f58b7145621e321dfb1ea716a34008210cbe988171636a10d67f758 (271626 bytes)
+accumulated at slot 9849748: unauthorized
+$ jamx propose-upgrade admin ../run/jamx-next.jam
+code hash b3921c899f58b7145621e321dfb1ea716a34008210cbe988171636a10d67f758 (271626 bytes)
+accumulated at slot 9849750: ok
+$ jamx show config
+service 0000000e
+  administrator: admin (upgrades wait 10 slots)
+  UPGRADE ANNOUNCED: code b3921c899f58b7145621e321dfb1ea716a34008210cbe988171636a10d67f758 applicable at slot 9849760
+  next asset 5, next deal 5, receipts 48
+   Announced in public state. Not even the administrator can apply it before the delay:
+$ jamx upgrade-exec   (must be refused)
+accumulated at slot 9849752: too early
+$ jamx cancel-upgrade admin
+accumulated at slot 9849754: ok
+   And the role can be given up for good, leaving code nobody can change:
+$ jamx set-admin admin none
+accumulated at slot 9849756: ok
+$ jamx propose-upgrade admin ../run/jamx-next.jam   (must be refused)
+code hash b3921c899f58b7145621e321dfb1ea716a34008210cbe988171636a10d67f758 (271626 bytes)
+accumulated at slot 9849758: unauthorized
+$ jamx show config
+service 0000000e
+  no administrator: the code can never be changed
+  next asset 5, next deal 5, receipts 52
+
+== Done ==
+$ jamx show receipts
+slot 9849744 payload 4c3925748480…: frozen
+slot 9849746 payload dfbf07dab805…: ok
+slot 9849748 payload ac072b4317c4…: unauthorized
+slot 9849750 payload daf4dfb762b5…: ok
+slot 9849752 payload 5de7fbc66ce4…: too early
+slot 9849754 payload a875d1be3210…: ok
+slot 9849756 payload ce9974bad42c…: ok
+slot 9849758 payload 40412cdcf499…: unauthorized
+   Every key in that walk-through could move one person's money, or none.
