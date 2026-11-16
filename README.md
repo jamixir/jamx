@@ -84,6 +84,7 @@ docs/SECURITY.md      the adversarial review: sixteen flaws, their fixes, what r
 docs/GAS.md           measured costs and what they imply for throughput
 docs/THROUGHPUT.md    why a package settles a few hundred orders, and what would raise it
 docs/PRIOR-ART.md     what happened to earlier attempts at each piece, and the lessons
+docs/ROADMAP.md       why exchanges still dominate, and what is missing in technology, market and law
 docs/explainer.html   the idea in plain words, with diagrams, and an honest "why JAM?"
 docs/explainer-src/   its source: `python3 build.py template.html ../explainer.html`
 docs/demo-transcript.txt   output of a full run of scripts/demo.sh
