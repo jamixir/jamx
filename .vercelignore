@@ -1,0 +1,8 @@
+# Only the site is deployed. Keep the Rust workspace and build output out of the upload.
+target/
+crates/
+scripts/
+docs/
+run/
+*.jam
+*.polkavm
