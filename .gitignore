@@ -2,3 +2,4 @@ target/
 .jamx/
 *.jam
 *.polkavm
+node_modules/

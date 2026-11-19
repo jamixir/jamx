@@ -1,0 +1,914 @@
+<title>JAMX</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a left-aligned column on mineral grey. Two rails carry all the colour:
+   amber for what happens on Bitcoin, cobalt for what happens on JAM. Everything else is ink. */
+:root {
+  --bg: #F1F3F4; --surface: #FFFFFF; --sunk: #E5E9EC; --ink: #0F1A24; --muted: #54616D; --line: #CCD3D9;
+  --btc: #A85800; --btc-soft: #FAEBD4; --jam: #2646C4; --jam-soft: #E2E8FB;
+  --ok: #1B7347; --bad: #B3261E; --flash: #FFF1B8;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B1117; --surface: #121A22; --sunk: #080D12; --ink: #E9EEF2; --muted: #94A3B1; --line: #26333F;
+    --btc: #F0A440; --btc-soft: #2E2210; --jam: #93A9FF; --jam-soft: #162047;
+    --ok: #5CC592; --bad: #FF8A80; --flash: #4A3D0C; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B1117; --surface: #121A22; --sunk: #080D12; --ink: #E9EEF2; --muted: #94A3B1; --line: #26333F;
+  --btc: #F0A440; --btc-soft: #2E2210; --jam: #93A9FF; --jam-soft: #162047;
+  --ok: #5CC592; --bad: #FF8A80; --flash: #4A3D0C; color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+a { color: inherit; text-decoration-color: var(--line); text-underline-offset: 3px; }
+a:hover { text-decoration-color: currentColor; }
+:focus-visible { outline: 2px solid var(--jam); outline-offset: 3px; border-radius: 3px; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.05; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(2.7rem, 7.2vw, 5.2rem); font-weight: 750; letter-spacing: -0.035em; }
+h2 { font-size: clamp(1.9rem, 4.2vw, 3rem); font-weight: 700; }
+h3 { font-size: 1.2rem; font-weight: 650; letter-spacing: -0.01em; line-height: 1.25; }
+p { margin: 0; }
+.wrap { max-width: 1120px; margin-inline: auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.band { padding-block: clamp(56px, 9vw, 112px); }
+.band-sunk { background: var(--sunk); }
+.band-line { border-top: 1px solid var(--line); }
+.eyebrow { font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.lede { font-size: 1.16rem; color: var(--muted); max-width: 62ch; margin-top: 18px; }
+.prose { max-width: 64ch; display: grid; gap: 16px; margin-top: 22px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.btc { color: var(--btc); } .jam { color: var(--jam); }
+
+/* header */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 24px; min-height: 60px; }
+.brand { font-family: var(--display); font-weight: 800; font-size: 1.3rem; letter-spacing: -0.04em; text-decoration: none; display: flex; align-items: center; gap: 9px; }
+.brand i { display: grid; grid-template-rows: 4px 4px; gap: 3px; width: 18px; }
+.brand i::before, .brand i::after { content: ""; border-radius: 2px; }
+.brand i::before { background: var(--btc); } .brand i::after { background: var(--jam); }
+.nav { display: flex; gap: 22px; margin-left: auto; font-size: 0.92rem; }
+.nav a { text-decoration: none; color: var(--muted); }
+.nav a:hover { color: var(--ink); }
+@media (max-width: 860px) { .nav { display: none; } .top .btn { margin-left: auto; } }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 0.96rem var(--body); padding: 11px 18px; border-radius: 8px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg); text-decoration: none; cursor: pointer; transition: transform .12s ease; }
+.btn:hover { transform: translateY(-1px); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.small { padding: 7px 13px; font-size: 0.88rem; }
+.btn[disabled] { opacity: .5; cursor: default; transform: none; }
+
+/* hero */
+.hero { padding-block: clamp(40px, 7vw, 88px) clamp(48px, 8vw, 96px); }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: clamp(28px, 5vw, 64px); align-items: center; }
+@media (max-width: 900px) { .hero-grid { grid-template-columns: minmax(0, 1fr); } }
+.status { display: inline-flex; align-items: center; gap: 9px; font-family: var(--mono); font-size: 0.78rem; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 5px 12px 5px 10px; margin-bottom: 26px; }
+.status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--btc); }
+.hero .lede { font-size: clamp(1.1rem, 1.9vw, 1.3rem); color: var(--ink); max-width: 34em; margin-top: 26px; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 26px; margin: 38px 0 0; padding: 18px 0 0; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 0.8rem; color: var(--muted); list-style: none; }
+figure { margin: 0; }
+figcaption { font-size: 0.9rem; color: var(--muted); margin-top: 14px; max-width: 46ch; }
+.rails { width: 100%; height: auto; display: block; }
+.rails .lane-btc { fill: var(--btc-soft); } .rails .lane-jam { fill: var(--jam-soft); }
+.rails .node { fill: var(--surface); stroke: var(--line); }
+.rails text { font-family: var(--body); font-size: 13px; fill: var(--ink); }
+.rails .sub { font-size: 11px; fill: var(--muted); }
+.rails .lab { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; }
+.rails .t-btc { fill: var(--btc); } .rails .t-jam { fill: var(--jam); }
+.rails .a-btc { stroke: var(--btc); } .rails .a-jam { stroke: var(--jam); } .rails .a-ink { stroke: var(--ink); stroke-dasharray: 3 5; }
+.rails .h-btc { fill: var(--btc); } .rails .h-jam { fill: var(--jam); } .rails .h-ink { fill: var(--ink); }
+.rails .amt { font-family: var(--mono); font-weight: 500; font-size: 13px; }
+.rails .dot { fill: var(--ink); animation: fall 2.6s cubic-bezier(.5,0,.5,1) infinite; }
+@keyframes fall { 0% { transform: translateY(0); opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(104px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .rails .dot { animation: none; opacity: 0; } html { scroll-behavior: auto; } .btn { transition: none; } }
+
+/* problem figures */
+.figs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: 44px; border-top: 1px solid var(--ink); }
+.figs > div { padding: 22px 24px 4px 0; }
+.figs > div + div { padding-left: 24px; border-left: 1px solid var(--line); }
+.figs b { display: block; font-family: var(--display); font-size: clamp(2rem, 4.4vw, 3.1rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+.figs span { display: block; color: var(--muted); font-size: 0.95rem; margin-top: 10px; max-width: 28ch; }
+@media (max-width: 720px) { .figs { grid-template-columns: minmax(0, 1fr); } .figs > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); } }
+
+/* steps of the mechanism */
+.how { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; margin-top: 46px; counter-reset: how; padding: 0; list-style: none; }
+.how li { counter-increment: how; border-top: 3px solid var(--line); padding-top: 16px; min-width: 0; }
+.how li.on-btc { border-color: var(--btc); } .how li.on-jam { border-color: var(--jam); }
+.how li::before { content: counter(how); font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+.how h3 { margin: 6px 0 8px; }
+.how p { color: var(--muted); font-size: 0.97rem; }
+.where { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-top: 12px; }
+@media (max-width: 980px) { .how { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .how { grid-template-columns: minmax(0, 1fr); } }
+.keys { margin-top: 56px; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: clamp(24px, 5vw, 64px); align-items: start; border-top: 1px solid var(--line); padding-top: 36px; }
+.keys ul { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 28px; }
+.keys li { font-size: 0.97rem; color: var(--muted); }
+.keys li b { display: block; color: var(--ink); font-weight: 600; }
+@media (max-width: 820px) { .keys { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 520px) { .keys ul { grid-template-columns: minmax(0, 1fr); } }
+
+/* demo */
+.demo { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 28px; margin-top: 40px; align-items: start; }
+@media (max-width: 940px) { .demo { grid-template-columns: minmax(0, 1fr); } }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 9px; padding: 3px; gap: 3px; background: var(--surface); }
+.seg button { font: 500 0.9rem var(--body); border: 0; background: transparent; color: var(--muted); padding: 8px 13px; border-radius: 6px; cursor: pointer; }
+.seg button[aria-checked="true"] { background: var(--ink); color: var(--bg); }
+.demo-controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; align-items: center; }
+.demo-controls .count { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); margin-left: auto; }
+.steps { list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 0; }
+.steps li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 14px; padding-bottom: 18px; position: relative; opacity: .42; }
+.steps li::before { content: ""; position: absolute; left: 13px; top: 26px; bottom: 0; width: 2px; background: var(--line); }
+.steps li:last-child::before { display: none; }
+.steps .pin { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); background: var(--bg); display: grid; place-items: center; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); z-index: 1; }
+.band-sunk .steps .pin { background: var(--sunk); }
+.steps li.done, .steps li.now { opacity: 1; }
+.steps li.done .pin.l-btc, .steps li.now .pin.l-btc { border-color: var(--btc); color: var(--btc); }
+.steps li.done .pin.l-jam, .steps li.now .pin.l-jam { border-color: var(--jam); color: var(--jam); }
+.steps li.done .pin.l-off, .steps li.now .pin.l-off { border-color: var(--ink); color: var(--ink); }
+.steps li.now .pin { background: var(--surface); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ink) 10%, transparent); }
+.steps h3 { font-size: 1.05rem; padding-top: 3px; }
+.steps .lane { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-left: 8px; font-weight: 400; white-space: nowrap; }
+.steps p { color: var(--muted); font-size: 0.95rem; margin-top: 5px; max-width: 58ch; }
+.steps li:not(.done):not(.now) p { display: none; }
+.steps .refused { color: var(--bad); font-weight: 600; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 76px); display: grid; gap: 18px; min-width: 0; }
+@media (max-width: 940px) { .panel { position: static; } }
+.panel h4 { font: 500 0.72rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; margin: 0 0 8px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; font: 500 0.82rem var(--mono); padding: 5px 11px; border-radius: 99px; border: 1px solid var(--line); }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.pill.open::before { background: var(--btc); } .pill.paid { color: var(--ok); border-color: currentColor; } .pill.paid::before { background: var(--ok); }
+.pill.unpaid { color: var(--bad); border-color: currentColor; } .pill.unpaid::before { background: var(--bad); }
+.kv { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.kv td { padding: 5px 0; border-top: 1px solid var(--line); vertical-align: baseline; }
+.kv tr:first-child td { border-top: 0; }
+.kv td:last-child { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 10px; }
+.kv td span { border-radius: 4px; padding: 1px 4px; margin-right: -4px; transition: background 1.2s ease; }
+.kv td span.changed { background: var(--flash); transition: none; }
+.held { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; }
+.held b { font-family: var(--mono); font-weight: 500; }
+.log { margin: 0; font-family: var(--mono); font-size: 0.74rem; line-height: 1.55; color: var(--muted); background: var(--sunk); border-radius: 8px; padding: 12px; max-height: 168px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.band-sunk .log { background: var(--bg); }
+.note { font-size: 0.85rem; color: var(--muted); margin-top: 18px; }
+
+/* why JAM */
+.split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; margin-top: 44px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); }
+.split > div { padding: 28px; min-width: 0; }
+.split > div + div { border-left: 1px solid var(--line); }
+.split .tag { font: 500 0.72rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--jam); }
+.split h3 { margin: 8px 0 10px; font-size: 1.35rem; }
+.split p { color: var(--muted); font-size: 0.97rem; }
+.split dl { margin: 18px 0 0; display: grid; gap: 6px; font-family: var(--mono); font-size: 0.82rem; }
+.split dl div { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding-top: 6px; }
+.split dt { color: var(--muted); } .split dd { margin: 0; white-space: nowrap; }
+@media (max-width: 760px) { .split { grid-template-columns: minmax(0, 1fr); } .split > div + div { border-left: 0; border-top: 1px solid var(--line); } }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(28px, 5vw, 64px); margin-top: 52px; }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.two h3 { margin-bottom: 14px; }
+.tbl-wrap { overflow-x: auto; }
+table.plain { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+table.plain th { text-align: left; font: 500 0.72rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 0 16px 8px 0; border-bottom: 1px solid var(--ink); }
+table.plain td { padding: 11px 16px 11px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.plain td:first-child { font-weight: 600; white-space: nowrap; }
+table.plain tr.us td { background: var(--jam-soft); }
+table.plain tr.us td:first-child { padding-left: 10px; color: var(--jam); }
+table.plain .val { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; }
+table.plain .src { color: var(--muted); font-size: 0.88rem; }
+.nots { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; }
+.nots li { color: var(--muted); font-size: 0.97rem; padding-left: 18px; position: relative; }
+.nots li::before { content: ""; position: absolute; left: 0; top: 0.72em; width: 8px; height: 2px; background: var(--muted); }
+.nots b { color: var(--ink); font-weight: 600; }
+
+/* evidence */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.chips li { font-size: 0.86rem; border: 1px solid var(--line); border-radius: 99px; padding: 4px 12px; background: var(--surface); }
+.chips.todo li { border-style: dashed; background: transparent; color: var(--muted); }
+.doclinks { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 30px; font-size: 0.95rem; }
+.doclinks a::after { content: " \2197"; color: var(--muted); }
+
+/* audiences */
+.who { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; margin-top: 44px; border-top: 1px solid var(--ink); }
+.who > div { padding: 26px 28px 26px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.who > div:nth-child(even) { padding-left: 28px; border-left: 1px solid var(--line); }
+.who p { color: var(--muted); font-size: 0.98rem; margin-top: 8px; max-width: 46ch; }
+.who .when { font: 400 0.72rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 8px; }
+@media (max-width: 720px) { .who { grid-template-columns: minmax(0, 1fr); } .who > div:nth-child(even) { padding-left: 0; border-left: 0; } }
+
+/* roadmap */
+.road { margin: 44px 0 0; padding: 0; list-style: none; display: grid; gap: 0; }
+.road li { display: grid; grid-template-columns: 150px minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px; padding: 22px 0; border-top: 1px solid var(--line); }
+.road li:first-child { border-top-color: var(--ink); }
+.road .stage { font-family: var(--display); font-weight: 700; font-size: 1.25rem; letter-spacing: -0.01em; }
+.road .stage small { display: block; font: 400 0.72rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.road li.cur .stage small { color: var(--btc); }
+.road p { font-size: 0.97rem; }
+.road .gate { color: var(--muted); font-size: 0.92rem; }
+.road .gate b { display: block; font: 500 0.72rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+@media (max-width: 820px) { .road li { grid-template-columns: minmax(0, 1fr); gap: 8px; } }
+
+/* funders */
+.buys { margin: 0; padding: 0; list-style: none; counter-reset: b; }
+.buys li { counter-increment: b; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 8px; padding: 13px 0; border-top: 1px solid var(--line); }
+.buys li::before { content: counter(b, decimal-leading-zero); font-family: var(--mono); font-size: 0.78rem; color: var(--muted); padding-top: 3px; }
+.buys b { font-weight: 600; display: block; }
+.buys span { color: var(--muted); font-size: 0.92rem; }
+
+/* faq */
+.faq { margin-top: 36px; border-top: 1px solid var(--ink); max-width: 820px; }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary { cursor: pointer; padding: 16px 28px 16px 0; font-weight: 600; list-style: none; position: relative; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; position: absolute; right: 4px; top: 13px; font-family: var(--mono); font-size: 1.2rem; color: var(--muted); }
+.faq details[open] summary::after { content: "\2212"; }
+.faq p { color: var(--muted); padding: 0 0 18px; max-width: 64ch; }
+
+/* waitlist */
+.join { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(28px, 6vw, 80px); align-items: start; }
+@media (max-width: 820px) { .join { grid-template-columns: minmax(0, 1fr); } }
+form.wl { display: grid; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: clamp(20px, 3vw, 30px); }
+.wl label { display: grid; gap: 6px; font-size: 0.88rem; font-weight: 600; }
+.wl label small { font-weight: 400; color: var(--muted); }
+.wl input, .wl select, .wl textarea { font: 400 1rem var(--body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 11px 12px; width: 100%; }
+.wl textarea { min-height: 84px; resize: vertical; }
+.wl .fine { font-size: 0.82rem; color: var(--muted); }
+.wl-msg { font-size: 0.92rem; border-radius: 8px; padding: 10px 12px; background: var(--sunk); }
+.wl-msg.err { color: var(--bad); }
+.wl-done { background: var(--surface); border: 1px solid var(--ok); border-radius: 14px; padding: clamp(20px, 3vw, 30px); }
+.wl-done h3 { color: var(--ok); margin-bottom: 8px; }
+
+footer { border-top: 1px solid var(--line); padding-block: 36px 48px; font-size: 0.88rem; color: var(--muted); }
+footer .wrap { display: grid; gap: 16px; }
+footer nav { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+footer .src { max-width: 90ch; font-size: 0.82rem; }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="JAMX, top of page"><i aria-hidden="true"></i>JAMX</a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#how">How it works</a>
+      <a href="#demo">Demo</a>
+      <a href="#why-jam">Why JAM</a>
+      <a href="#evidence">Evidence</a>
+      <a href="#roadmap">Roadmap</a>
+      <a href="#funders">For funders</a>
+    </nav>
+    <a class="btn small" href="#waitlist">Join the waitlist</a>
+  </div>
+</header>
+
+<main id="top">
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="status">Prototype, running on a JAM testnet</p>
+      <h1>An exchange with no vault.</h1>
+      <p class="lede">JAMX matches orders on JAM and settles bitcoin on Bitcoin. The seller pays the buyer directly and proves it, and the service releases the money when the proof checks out. No key anywhere in it can move more than one person's funds.</p>
+      <div class="cta">
+        <a class="btn" href="#waitlist">Join the waitlist</a>
+        <a class="btn ghost" href="#demo">Watch a trade settle</a>
+      </div>
+      <ul class="facts">
+        <li>Gray Paper 0.8.0</li>
+        <li>130 tests passing</li>
+        <li>16 of 16 review findings fixed</li>
+        <li>Not audited. No real funds.</li>
+      </ul>
+    </div>
+    <figure>
+      <svg class="rails" viewBox="0 0 440 412" role="img" aria-label="The seller sends bitcoin from their wallet to the buyer's wallet on Bitcoin. A proof of that payment is the only thing that crosses to JAM, where it releases the buyer's locked tokens to the seller.">
+        <defs>
+          <marker id="h-btc" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path class="h-btc" d="M0 0 8 4 0 8z"/></marker>
+          <marker id="h-jam" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path class="h-jam" d="M0 0 8 4 0 8z"/></marker>
+          <marker id="h-ink" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path class="h-ink" d="M0 0 8 4 0 8z"/></marker>
+        </defs>
+        <rect class="lane-btc" x="8" y="16" width="424" height="130" rx="14"/>
+        <text class="lab t-btc" x="24" y="42">BITCOIN</text>
+        <rect class="node" x="24" y="62" width="140" height="60" rx="8"/>
+        <text x="94" y="88" text-anchor="middle">Seller's wallet</text>
+        <text class="sub" x="94" y="106" text-anchor="middle">holds the bitcoin</text>
+        <rect class="node" x="276" y="62" width="140" height="60" rx="8"/>
+        <text x="346" y="88" text-anchor="middle">Buyer's wallet</text>
+        <text class="sub" x="346" y="106" text-anchor="middle">her own keys</text>
+        <line class="a-btc" x1="166" y1="92" x2="272" y2="92" stroke-width="2" marker-end="url(#h-btc)"/>
+        <text class="amt t-btc" x="219" y="83" text-anchor="middle">0.1 BTC</text>
+        <text class="sub" x="219" y="109" text-anchor="middle">to her address</text>
+
+        <line class="a-ink" x1="220" y1="150" x2="220" y2="260" stroke-width="2" marker-end="url(#h-ink)"/>
+        <circle class="dot" cx="220" cy="152" r="5"/>
+        <text x="236" y="198" font-weight="600">proof of payment</text>
+        <text class="sub" x="236" y="216">Merkle path + block headers</text>
+        <text class="sub" x="204" y="198" text-anchor="end">nothing else</text>
+        <text class="sub" x="204" y="213" text-anchor="end">crosses</text>
+
+        <rect class="lane-jam" x="8" y="266" width="424" height="130" rx="14"/>
+        <text class="lab t-jam" x="24" y="292">JAM  ·  THE JAMX SERVICE</text>
+        <rect class="node" x="24" y="312" width="140" height="60" rx="8"/>
+        <text x="94" y="338" text-anchor="middle">Seller's account</text>
+        <text class="sub" x="94" y="356" text-anchor="middle">paid on proof</text>
+        <rect class="node" x="276" y="312" width="140" height="60" rx="8"/>
+        <text x="346" y="338" text-anchor="middle">Buyer's tokens</text>
+        <text class="sub" x="346" y="356" text-anchor="middle">locked until proof</text>
+        <line class="a-jam" x1="274" y1="342" x2="168" y2="342" stroke-width="2" marker-end="url(#h-jam)"/>
+        <text class="amt t-jam" x="220" y="333" text-anchor="middle">R$ 37,420</text>
+        <text class="sub" x="220" y="359" text-anchor="middle">released</text>
+      </svg>
+      <figcaption>The bitcoin goes from one person's wallet to another's. The service holds neither wallet. It only reads the proof.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band band-line" id="problem">
+  <div class="wrap">
+    <p class="eyebrow">Why this exists</p>
+    <h2>Every exchange hack is the same hack.</h2>
+    <div class="prose">
+      <p>An exchange keeps its customers' coins in wallets it controls. Whoever gets the keys gets the coins. On 29 October 2026 about $6.3 billion left Binance's hot wallets in one night. Bitcoin itself was never touched. The vault was. Binance covered the loss from its own funds; FTX, in 2022, could not.</p>
+      <p>Most on-chain alternatives rebuilt the vault in another shape: a bridge behind a committee of signers, an administrator key, a solver with a database. Seven of them failed on security in 2025 and 2026.</p>
+    </div>
+    <div class="figs">
+      <div><b>$6.3B</b><span>taken from one exchange's hot wallets on 29 October 2026</span></div>
+      <div><b>290,000 BTC</b><span>sit with custodians on other chains. Signer networks hold about 4,400.</span></div>
+      <div><b>5 of 7</b><span>security failures of on-chain venues broke at a key that held pooled funds, or at an operator's server</span></div>
+    </div>
+    <div class="prose">
+      <p>JAMX removes the part that breaks. It never holds the bitcoin, and no key can move anyone else's tokens.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band band-line" id="how">
+  <div class="wrap">
+    <p class="eyebrow">How it works</p>
+    <h2>How a trade settles</h2>
+    <ol class="how">
+      <li>
+        <h3>You sign an order</h3>
+        <p>It is a message, not a transaction. It stays off-chain until it trades, so posting a quote costs nothing.</p>
+        <span class="where">Off-chain</span>
+      </li>
+      <li class="on-jam">
+        <h3>Each round has one price</h3>
+        <p>Every six seconds anyone can bundle the open orders into a round. All of them trade at a single clearing price, so there is no place in line to race for.</p>
+        <span class="where jam">On JAM</span>
+      </li>
+      <li class="on-btc">
+        <h3>The seller pays you on Bitcoin</h3>
+        <p>Your payment is locked in the service. The seller sends the bitcoin to your own address on Bitcoin's chain. It never enters JAM and is never wrapped.</p>
+        <span class="where btc">On Bitcoin</span>
+      </li>
+      <li class="on-jam">
+        <h3>The proof releases the money</h3>
+        <p>The service checks the payment against Bitcoin's block headers, which it follows itself, and pays the seller. If no proof arrives in time, by Bitcoin's own clock, you are refunded and receive the seller's bond.</p>
+        <span class="where jam">On JAM</span>
+      </li>
+    </ol>
+    <div class="keys">
+      <div>
+        <h3>Your keys, with a way back</h3>
+        <p class="lede" style="font-size:1rem;margin-top:10px">Holding your own keys should not mean one mistake costs everything. Each account sets its own rules, and weakening them always waits out a delay.</p>
+      </div>
+      <ul>
+        <li><b>A second device</b>that can trade but cannot withdraw.</li>
+        <li><b>A guardian</b>who can freeze the account and cannot spend from it.</li>
+        <li><b>Recovery by people you choose</b>if you lose every device.</li>
+        <li><b>A daily limit</b>so a stolen key, or a forced signature, moves only so much.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="band band-sunk" id="demo">
+  <div class="wrap">
+    <p class="eyebrow">Demo</p>
+    <h2>Watch a trade settle</h2>
+    <p class="lede">Ana buys 0.1 BTC from a trading desk and pays in a real token issued by her bank. Pick what the desk does next.</p>
+    <div class="demo">
+      <div>
+        <div class="seg" role="radiogroup" aria-label="Scenario" id="scenarios">
+          <button type="button" role="radio" aria-checked="true" data-s="paid">The desk pays</button>
+          <button type="button" role="radio" aria-checked="false" data-s="unpaid">The desk never pays</button>
+          <button type="button" role="radio" aria-checked="false" data-s="forged">The desk fakes a receipt</button>
+        </div>
+        <div class="demo-controls">
+          <button type="button" class="btn small" id="demo-next">Next step</button>
+          <button type="button" class="btn small ghost" id="demo-play">Play all</button>
+          <button type="button" class="btn small ghost" id="demo-reset">Start over</button>
+          <span class="count" id="demo-count" aria-live="polite"></span>
+        </div>
+        <ol class="steps" id="steps"></ol>
+      </div>
+      <aside class="panel" aria-label="State of the trade">
+        <div><span class="pill" id="deal-pill">No deal yet</span></div>
+        <div>
+          <h4 class="jam">On JAM · real tokens</h4>
+          <table class="kv"><tbody>
+            <tr><td>Ana, available</td><td><span id="v-anaAvail"></span></td></tr>
+            <tr><td>Ana, locked in the deal</td><td><span id="v-anaLocked"></span></td></tr>
+            <tr><td>Desk, available</td><td><span id="v-deskAvail"></span></td></tr>
+            <tr><td>Desk, bond locked</td><td><span id="v-deskBond"></span></td></tr>
+            <tr><td>Fees to the bundler</td><td><span id="v-fees"></span></td></tr>
+          </tbody></table>
+        </div>
+        <div>
+          <h4 class="btc">On Bitcoin</h4>
+          <table class="kv"><tbody>
+            <tr><td>Ana's own wallet</td><td><span id="v-anaBtc"></span></td></tr>
+            <tr><td>Desk's wallet</td><td><span id="v-deskBtc"></span></td></tr>
+            <tr><td>Chain height</td><td><span id="v-height"></span></td></tr>
+            <tr><td>Height the service knows</td><td><span id="v-tip"></span></td></tr>
+          </tbody></table>
+        </div>
+        <div class="held"><span>Bitcoin held by JAMX</span><b>0.00000000 BTC</b></div>
+        <pre class="log" id="demo-log" aria-label="What the service recorded"></pre>
+      </aside>
+    </div>
+    <p class="note">This is a simulation in your browser. Names, amounts, heights and slot numbers are examples. The steps are the ones the service runs on the testnet, where each is a real work-package.</p>
+  </div>
+</section>
+
+<section class="band" id="why-jam">
+  <div class="wrap">
+    <p class="eyebrow">Why JAM</p>
+    <h2>Why this needs JAM</h2>
+    <p class="lede">Checking a Bitcoin payment means hashing headers and walking Merkle paths. Checking a round of orders means hundreds of signatures. On most chains that work is too expensive to do on-chain, so projects hand it to an operator and ask you to trust the operator. JAM splits a service in two.</p>
+    <div class="split">
+      <div>
+        <span class="tag">Refine</span>
+        <h3>Heavy work, re-run by auditors</h3>
+        <p>Signatures, proof-of-work and Merkle proofs are checked here, off-chain and in parallel across cores. Validators chosen at random run it again, so nobody has to trust whoever ran it first.</p>
+        <dl>
+          <div><dt>budget per work-package</dt><dd>5,000,000,000 gas</dd></div>
+          <div><dt>one signature</dt><dd>3,000,000 gas</dd></div>
+          <div><dt>one Bitcoin receipt</dt><dd>100,000 gas</dd></div>
+        </dl>
+      </div>
+      <div>
+        <span class="tag">Accumulate</span>
+        <h3>Small, on-chain, final</h3>
+        <p>Funds are checked against state, the round gets its single price, and balances move, all or nothing. This is the scarce part, and where the design spends its effort.</p>
+        <dl>
+          <div><dt>budget per work-report</dt><dd>10,000,000 gas</dd></div>
+          <div><dt>one order settled</dt><dd>28,600 gas</dd></div>
+          <div><dt>one Bitcoin header</dt><dd>127,000 gas</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="two">
+      <div>
+        <h3>Where the trust ends up</h3>
+        <div class="tbl-wrap">
+          <table class="plain">
+            <thead><tr><th>Built on</th><th>You end up trusting</th></tr></thead>
+            <tbody>
+              <tr><td>A rollup</td><td>its sequencer and its upgrade council</td></tr>
+              <tr><td>A chain of its own</td><td>a small validator set, and the bridge that holds every deposit</td></tr>
+              <tr><td>A solver network</td><td>whitelisted, bonded solvers and their servers</td></tr>
+              <tr class="us"><td>JAM</td><td>JAM's validators, whose work is audited. The service has no operator, and no key unless its own code creates one.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <h3>What JAM does not change</h3>
+        <ul class="nots">
+          <li><b>Speed.</b> Rounds every six seconds, settled in twelve to eighteen. This is not a venue for trades decided in milliseconds.</li>
+          <li><b>Liquidity.</b> A new venue starts with none. A market maker has to bring it.</li>
+          <li><b>Money from banks.</b> A real or a dollar is a bank's liability on any chain. That side needs a licensed issuer.</li>
+          <li><b>Bugs.</b> Removing keys moves the risk into the service's own code. The audit comes before anything else.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band band-line" id="evidence">
+  <div class="wrap">
+    <p class="eyebrow">Evidence</p>
+    <h2>What exists today</h2>
+    <p class="lede">A working service in about 8,800 lines of Rust, running end to end on a polkajam testnet with six validators. Every figure below was measured on 16 November 2026 and can be reproduced from the repository.</p>
+    <div class="tbl-wrap" style="margin-top:36px">
+      <table class="plain">
+        <thead><tr><th>Measure</th><th>Result</th><th>How it was obtained</th></tr></thead>
+        <tbody>
+          <tr><td>Automated tests</td><td class="val">130 passing</td><td class="src">3,300 lines of tests, including Bitcoin mainnet headers across a difficulty change and real transaction proofs</td></tr>
+          <tr><td>Adversarial review</td><td class="val">16 found, 16 fixed</td><td class="src">a second reviewer was told to steal, lock funds or stop the service; each finding is now a regression test</td></tr>
+          <tr><td>Settling one order</td><td class="val">28,600 gas</td><td class="src">accumulate, everything included, under the Gray Paper 0.8.0 gas model</td></tr>
+          <tr><td>Orders per work-package</td><td class="val">about 290 per core</td><td class="src">a round of 286 settled; a round of 300 was refused whole, without a trap</td></tr>
+          <tr><td>One Bitcoin header</td><td class="val">127,000 gas</td><td class="src">Bitcoin's 144 blocks a day fit in two work items</td></tr>
+          <tr><td>Full walkthrough</td><td class="val">15 minutes</td><td class="src">a scripted run on the testnet; every step is a real work-package, including refused receipts and a timeout</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="two">
+      <div>
+        <h3>Built and tested</h3>
+        <ul class="chips">
+          <li>Batch auction with one price per round</li>
+          <li>Bank-issued tokens with a mint cap and a logged freeze</li>
+          <li>Bitcoin light client inside the service</li>
+          <li>Payment released on proof</li>
+          <li>Deadlines kept by Bitcoin's clock</li>
+          <li>Account rules: guardian, recovery, limits</li>
+          <li>Upgrades that are announced and wait</li>
+          <li>Per-item gas metering</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Not there yet</h3>
+        <ul class="chips todo">
+          <li>Independent audit</li>
+          <li>Fees and storage deposits</li>
+          <li>A wallet</li>
+          <li>Pegged orders for market makers</li>
+          <li>A licensed issuer</li>
+          <li>JAM's main network</li>
+        </ul>
+      </div>
+    </div>
+    <div class="doclinks">
+      <a href="https://github.com/jamixir/jamx">Source code</a>
+      <a href="https://github.com/jamixir/jamx/blob/main/docs/DESIGN.md">Design</a>
+      <a href="https://github.com/jamixir/jamx/blob/main/docs/SECURITY.md">Security review</a>
+      <a href="https://github.com/jamixir/jamx/blob/main/docs/GAS.md">Measured costs</a>
+      <a href="https://github.com/jamixir/jamx/blob/main/docs/PRIOR-ART.md">What earlier projects taught us</a>
+      <a href="https://github.com/jamixir/jamx/blob/main/docs/ROADMAP.md">Full roadmap</a>
+    </div>
+  </div>
+</section>
+
+<section class="band band-line" id="who">
+  <div class="wrap">
+    <p class="eyebrow">Who it is for</p>
+    <h2>Built for whoever would otherwise hold the key</h2>
+    <p class="lede">Exchanges have repaid their customers after each recent theft, so safety alone does not move most people. It matters most to the institution that would have to do the repaying.</p>
+    <div class="who">
+      <div>
+        <span class="when">Pilot</span>
+        <h3>Banks and token issuers</h3>
+        <p>Offer bitcoin trading without holding your customers' coins. You issue the token, keep the allowlist and can freeze your own liability. Nobody can drain you of what you never held.</p>
+      </div>
+      <div>
+        <span class="when">Pilot</span>
+        <h3>People who want bitcoin in their own wallet</h3>
+        <p>Buy from your bank's app, receive on your own address, and keep a way back if you lose the phone.</p>
+      </div>
+      <div>
+        <span class="when">Pilot</span>
+        <h3>Market makers</h3>
+        <p>One price per round and no latency race. Orders pegged to a reference price and cancels that land before the round are on the roadmap, because nobody should quote into six seconds without them.</p>
+      </div>
+      <div>
+        <span class="when">After the pilot</span>
+        <h3>Companies and trading desks</h3>
+        <p>About a quarter of the crypto value declared in Brazil moves outside exchanges, between companies, with one side sending first. Delivery against payment removes that risk.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band band-sunk" id="roadmap">
+  <div class="wrap">
+    <p class="eyebrow">Roadmap</p>
+    <h2>Four stages, each with a gate</h2>
+    <p class="lede">Brazil first: four in five people who hold crypto there bought it in a bank's app, and banks already issue real tokens. Each stage starts only when the one before it has passed its test.</p>
+    <ol class="road">
+      <li class="cur">
+        <div class="stage"><small>Now</small>Groundwork</div>
+        <p>A legal opinion in Brazil. Conversations with issuers. An independent audit. A run on the public JAM test network across implementations.</p>
+        <p class="gate"><b>Gate</b>An issuer's lawyers say the venue can lawfully carry its token.</p>
+      </li>
+      <li>
+        <div class="stage"><small>Stage 1</small>Pilot</div>
+        <p>One issuer and its identified customers, one market maker, one pair: bitcoin for a real token. A wallet with passkeys and recovery. Fees and deposits in place.</p>
+        <p class="gate"><b>Gate</b>Six months without an incident, and a spread within twice an exchange's.</p>
+      </li>
+      <li>
+        <div class="stage"><small>Stage 2</small>Dollars</div>
+        <p>Dollar stablecoins delivered on Ethereum and Tron and proved on JAM, the way bitcoin is. Pegged orders. A share of the fee for the app that brings the order.</p>
+        <p class="gate"><b>Gate</b>A second institution joins for its own reasons.</p>
+      </li>
+      <li>
+        <div class="stage"><small>Stage 3</small>Institutions</div>
+        <p>Private balances and orders. Exchange between bank tokens on institutions' own books. Throughput.</p>
+        <p class="gate"><b>Gate</b>None set yet.</p>
+      </li>
+    </ol>
+    <div class="two">
+      <div>
+        <h3>We will know the idea is wrong if</h3>
+        <ul class="nots">
+          <li>no licensed issuer lets its token trade where no licensed operator stands;</li>
+          <li>the regulator decides that everyone who bundles orders needs a licence;</li>
+          <li>no market maker quotes a tight price into six-second rounds, even with pegged orders;</li>
+          <li>JAM's main network, or a price for its core time, is years away.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>What is settled and what is not</h3>
+        <p style="color:var(--muted);font-size:0.97rem">The mechanism works and is measured. The open questions are legal and commercial: whether a venue with no operator counts as a service provider in Brazil, who issues the token, and who makes the market. The roadmap puts those first because code cannot answer them.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="funders">
+  <div class="wrap">
+    <p class="eyebrow">For funders</p>
+    <h2>What funding buys</h2>
+    <p class="lede">JAMX is open source under Apache 2.0 and has no token. The work below separates a prototype from a pilot, and each item ends in something that can be checked.</p>
+    <div class="two">
+      <div>
+        <ol class="buys">
+          <li><div><b>Independent audit, fuzzing and a bug bounty</b><span>Ends in a public report.</span></div></li>
+          <li><div><b>A wallet with passkeys</b><span>Ends when a person recovers an account without a seed phrase. Needs P-256 verification in refine.</span></div></li>
+          <li><div><b>Pegged orders and cancel-first</b><span>Ends when a named market maker quotes the main pair.</span></div></li>
+          <li><div><b>Fees and storage deposits</b><span>Ends when the service pays for its own core time.</span></div></li>
+          <li><div><b>Bitcoin over Lightning, by hash lock</b><span>Ends when a small purchase settles in seconds.</span></div></li>
+          <li><div><b>Light clients for Ethereum and Tron</b><span>Ends when a dollar stablecoin trade settles by proof.</span></div></li>
+          <li><div><b>Legal opinion and a first issuer in Brazil</b><span>Ends in a written opinion and a signed pilot.</span></div></li>
+        </ol>
+      </div>
+      <div>
+        <h3>Why it matters to the JAM ecosystem</h3>
+        <ul class="nots">
+          <li><b>A service that needs JAM in particular.</b> The design depends on heavy verification in refine and on a service that has no operator. It is a concrete answer to the question of what JAM is for.</li>
+          <li><b>Measurements others can use.</b> The gas figures come from a real workload, including where the current model hurts: a storage write costs about as much as a hundred memory accesses, and accumulate is the bottleneck by a factor of five.</li>
+          <li><b>Written from the Gray Paper.</b> A clean-room build by the team behind Jamixir, a JAM implementation in Elixir, using other tools only as black boxes.</li>
+          <li><b>Honest about its limits.</b> The repository records the sixteen flaws the first version had, what is still trusted, and what would prove the idea wrong.</li>
+        </ul>
+        <div class="cta"><a class="btn" href="#waitlist" data-role="funder">Start a conversation</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band band-line" id="faq">
+  <div class="wrap">
+    <p class="eyebrow">Questions</p>
+    <h2>Plain answers</h2>
+    <div class="faq">
+      <details><summary>Is it live?</summary><p>No. It is a prototype on a local JAM testnet with test money. JAM's main network has not launched, and the service has not had an independent audit.</p></details>
+      <details><summary>Does JAMX ever hold my bitcoin?</summary><p>No. Bitcoin moves from the seller's wallet to yours on Bitcoin's own chain. The service reads proof that it happened and nothing more.</p></details>
+      <details><summary>What does it hold, then?</summary><p>Balances of tokens issued by banks, and the payments and bonds locked in open trades. No key can move them. Only the rules in the code can, which is why the code is the thing to audit.</p></details>
+      <details><summary>What if the seller never pays?</summary><p>The trade times out by Bitcoin's own clock, not by the service's. You get your money back, plus the seller's bond.</p></details>
+      <details><summary>Can anyone freeze my funds?</summary><p>An issuer can freeze balances of its own token, and every freeze is recorded on-chain. Nobody can freeze or move your bitcoin, because the service never has it.</p></details>
+      <details><summary>How fast is it?</summary><p>A round clears every six seconds and settles on JAM in twelve to eighteen. A payment on Bitcoin then needs confirmations, usually half an hour to an hour. A Lightning option for small amounts is on the roadmap.</p></details>
+      <details><summary>Is there a token?</summary><p>No. Fees are paid in the asset being traded.</p></details>
+      <details><summary>Where does the idea come from?</summary><p>From the essay <a href="https://danicuki.substack.com/p/bitcoin-wasnt-hacked-binance-was">Bitcoin Wasn't Hacked. Binance Was.</a> JAMX is a working prototype of the design it describes.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="band band-sunk" id="waitlist">
+  <div class="wrap join">
+    <div>
+      <p class="eyebrow">Waitlist</p>
+      <h2>Be there when the pilot opens</h2>
+      <p class="lede">Tell us who you are. We will write when there is something for you to use, test or fund.</p>
+    </div>
+    <div>
+      <form class="wl" id="wl-form" novalidate>
+        <label for="wl-email">Email
+          <input id="wl-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
+        </label>
+        <label for="wl-role">I am
+          <select id="wl-role" name="role">
+            <option value="person">someone who wants bitcoin in my own wallet</option>
+            <option value="issuer">at a bank or a token issuer</option>
+            <option value="maker">a market maker or trading desk</option>
+            <option value="funder">a funder or investor</option>
+            <option value="builder">a developer</option>
+          </select>
+        </label>
+        <label for="wl-note">Anything we should know <small>(optional)</small>
+          <textarea id="wl-note" name="note" maxlength="600"></textarea>
+        </label>
+        <button class="btn" type="submit" id="wl-submit">Join the waitlist</button>
+        <p class="wl-msg" id="wl-msg" role="status" hidden></p>
+        <p class="fine">We use your address only to write to you about JAMX.</p>
+      </form>
+      <div class="wl-done" id="wl-done" hidden>
+        <h3>You are on the list</h3>
+        <p>We will write to <b id="wl-done-email"></b> when the pilot opens.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <nav aria-label="Links">
+      <a href="https://github.com/jamixir/jamx">GitHub</a>
+      <a href="https://danicuki.substack.com/p/bitcoin-wasnt-hacked-binance-was">The essay</a>
+      <a href="https://graypaper.com">Gray Paper</a>
+      <a href="https://github.com/jamixir/jamx/blob/main/docs/ROADMAP.md">Roadmap and sources</a>
+    </nav>
+    <p>JAMX is a research prototype. Nothing on this page is an offer of financial services, an invitation to invest, or legal advice.</p>
+    <p class="src">Figures about the market come from research done on 16 November 2026 and are sourced in the repository: the theft at Binance from Reuters reporting, bitcoin held on other chains from DefiLlama, and the count of failures from the project's own survey of about twenty venues. Figures about JAMX were measured on a local testnet of polkajam 0.1.29.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var money = function (n) { return "R$ " + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var btc = function (n) { return n.toFixed(8) + " BTC"; };
+  var num = function (n) { return n.toLocaleString("en-US"); };
+
+  /* ---------------- demo ---------------- */
+  var AMOUNT = 37420.00, FEE = 18.71, BOND = 1122.60;
+  function initial() {
+    return { anaAvail: 50000.00, anaLocked: 0, deskAvail: 120000.00, deskBond: 0, fees: 0,
+             anaBtc: 0, deskBtc: 2.5, height: 975411, tip: 975411, deal: "No deal yet", kind: "" };
+  }
+  var opening = [
+    { lane: "off", title: "Ana signs an order",
+      text: "Buy 0.1 BTC at up to R$ 375,000 per bitcoin, delivered to her own address. The order is a signed message. Nothing is on-chain yet.",
+      log: "order   buy 0.10000000 BTC  limit 375,000.00  to bc1q...7k4e",
+      fx: function () {} },
+    { lane: "jam", title: "The round clears at one price",
+      text: "A bundler packs the open orders into a work-package. Signatures are checked in refine. In accumulate every order in the round trades at R$ 374,200.00.",
+      log: "slot 9,885,613   round BTC/BRL  price 374,200.00  14 orders  0.84 BTC",
+      fx: function () {} },
+    { lane: "jam", title: "A deal opens and both sides lock",
+      text: "Ana's payment and fee are locked. The desk locks a bond. The desk now has two hours, measured by Bitcoin's clock, to pay her.",
+      log: "slot 9,885,613   deal #1 open  amount 37,420.00  bond 1,122.60  window 7,200 s",
+      fx: function (s) { s.anaAvail -= AMOUNT + FEE; s.anaLocked = AMOUNT + FEE; s.deskAvail -= BOND; s.deskBond = BOND; s.deal = "Deal #1 open, awaiting payment"; s.kind = "open"; } }
+  ];
+  var timeout = [
+    { lane: "btc", title: "Bitcoin's clock passes the limit",
+      text: "Blocks keep arriving. Once a block buried under the required confirmations is later than the deal's limit, the window has closed. Whoever wants the refund carries the headers that show it.",
+      log: "headers +19      tip 975,430  median time past the limit",
+      fx: function (s) { s.height = 975430; s.tip = 975430; } },
+    { lane: "jam", title: "Anyone closes the deal",
+      text: "Ana is refunded in full and receives the desk's bond. No operator had to decide anything.",
+      log: "slot 9,887,102   deal #1 unpaid  refund 37,438.71  bond 1,122.60 to buyer",
+      fx: function (s) { s.anaAvail += s.anaLocked + s.deskBond; s.anaLocked = 0; s.deskBond = 0; s.deal = "Deal #1 closed: unpaid, buyer refunded"; s.kind = "unpaid"; } }
+  ];
+  var scenarios = {
+    paid: opening.concat([
+      { lane: "btc", title: "The desk pays Ana on Bitcoin",
+        text: "It sends 0.1 BTC to her address, with the deal's tag in the transaction. The bitcoin goes from its wallet to hers.",
+        log: "bitcoin          tx 4f1c...9ab2 broadcast  0.10000000 BTC  tag deal#1",
+        fx: function (s) { s.deskBtc -= 0.1; } },
+      { lane: "btc", title: "Bitcoin confirms it",
+        text: "The transaction is mined in block 975,412. Two more blocks follow, which makes the three confirmations this asset requires.",
+        log: "bitcoin          block 975,412 ... 975,414  3 confirmations",
+        fx: function (s) { s.anaBtc = 0.1; s.height = 975414; } },
+      { lane: "jam", title: "Someone carries the headers to JAM",
+        text: "Three 80-byte block headers. Their proof-of-work is checked in refine, and the service's own copy of Bitcoin's chain moves forward. Anyone can do this, and the desk has every reason to.",
+        log: "slot 9,885,941   headers +3  tip 975,414  work checked in refine",
+        fx: function (s) { s.tip = 975414; } },
+      { lane: "jam", title: "The desk presents its receipt",
+        text: "The transaction and its Merkle path. The service checks that it is in the block, pays Ana's address the right amount, carries this deal's tag, has three confirmations and fell inside the window.",
+        log: "slot 9,885,944   receipt ok  in block 975,412  conf 3  on time",
+        fx: function () {} },
+      { lane: "jam", title: "Settled",
+        text: "The payment goes to the desk and its bond comes back. Ana has her bitcoin in her own wallet. JAMX held none of it at any point.",
+        log: "slot 9,885,944   deal #1 paid  37,401.29 to seller  bond returned  fees 37.42",
+        fx: function (s) { s.deskAvail += AMOUNT - FEE + s.deskBond; s.fees += 2 * FEE; s.anaLocked = 0; s.deskBond = 0; s.deal = "Deal #1 closed: paid"; s.kind = "paid"; } }
+    ]),
+    unpaid: opening.concat([
+      { lane: "btc", title: "The desk does nothing",
+        text: "No payment arrives at Ana's address. Her money stays locked in the deal, where the desk cannot reach it either.",
+        log: "bitcoin          block 975,412 ... 975,418  no payment to bc1q...7k4e",
+        fx: function (s) { s.height = 975418; } },
+      { lane: "jam", title: "A timeout sent too early is refused", refused: true,
+        text: "Someone asks to close the deal. The service refuses: by Bitcoin's clock the window is still open. A seller who pays on time can never lose to a fast clock on the other chain.",
+        log: "slot 9,886,410   timeout deal #1  REFUSED  too early",
+        fx: function (s) { s.tip = 975418; } }
+    ]).concat(timeout),
+    forged: opening.concat([
+      { lane: "jam", title: "The desk presents a receipt from a block that does not exist", refused: true,
+        text: "The service follows Bitcoin's chain itself and has never seen that block. Refused. Nothing moves.",
+        log: "slot 9,885,702   receipt deal #1  REFUSED  unknown block",
+        fx: function () {} },
+      { lane: "jam", title: "It tries a real payment made to someone else", refused: true,
+        text: "The transaction is real and confirmed, but it pays a different address and carries another deal's tag. Refused. A payment settles the deal it was made for and no other.",
+        log: "slot 9,885,760   receipt deal #1  REFUSED  wrong destination",
+        fx: function (s) { s.height = 975414; s.tip = 975414; } }
+    ]).concat(timeout)
+  };
+
+  var current = "paid", at = 1, timer = null, shown = {};
+  var laneName = { off: "off-chain", jam: "on JAM", btc: "on Bitcoin" };
+
+  function stateAt(n) {
+    var s = initial(), steps = scenarios[current];
+    for (var i = 0; i < n; i++) steps[i].fx(s);
+    return s;
+  }
+  function setVal(id, text) {
+    var el = $(id);
+    if (shown[id] !== undefined && shown[id] !== text) {
+      el.classList.add("changed");
+      setTimeout(function () { el.classList.remove("changed"); }, 60);
+    }
+    shown[id] = text; el.textContent = text;
+  }
+  function render() {
+    var steps = scenarios[current], ol = $("steps");
+    ol.textContent = "";
+    steps.forEach(function (st, i) {
+      var li = document.createElement("li");
+      li.className = i < at - 1 ? "done" : i === at - 1 ? "now" : "";
+      var pin = document.createElement("span"); pin.className = "pin l-" + st.lane; pin.textContent = String(i + 1);
+      var body = document.createElement("div");
+      var h = document.createElement("h3"); h.textContent = st.title;
+      if (st.refused) h.className = "refused";
+      var lane = document.createElement("span"); lane.className = "lane"; lane.textContent = laneName[st.lane];
+      h.appendChild(lane);
+      var p = document.createElement("p"); p.textContent = st.text;
+      body.appendChild(h); body.appendChild(p);
+      li.appendChild(pin); li.appendChild(body); ol.appendChild(li);
+    });
+    var s = stateAt(at);
+    setVal("v-anaAvail", money(s.anaAvail)); setVal("v-anaLocked", money(s.anaLocked));
+    setVal("v-deskAvail", money(s.deskAvail)); setVal("v-deskBond", money(s.deskBond));
+    setVal("v-fees", money(s.fees));
+    setVal("v-anaBtc", btc(s.anaBtc)); setVal("v-deskBtc", btc(s.deskBtc));
+    setVal("v-height", num(s.height)); setVal("v-tip", num(s.tip));
+    var pill = $("deal-pill"); pill.textContent = s.deal; pill.className = "pill " + s.kind;
+    var log = $("demo-log");
+    log.textContent = steps.slice(0, at).map(function (x) { return x.log; }).join("\n");
+    log.scrollTop = log.scrollHeight;
+    $("demo-count").textContent = "step " + at + " of " + steps.length;
+    $("demo-next").disabled = at >= steps.length;
+    $("demo-play").textContent = timer ? "Pause" : "Play all";
+  }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } }
+  function next() { if (at < scenarios[current].length) { at++; } if (at >= scenarios[current].length) stop(); render(); }
+  $("demo-next").addEventListener("click", function () { stop(); next(); });
+  $("demo-reset").addEventListener("click", function () { stop(); at = 1; shown = {}; render(); });
+  $("demo-play").addEventListener("click", function () {
+    if (timer) { stop(); render(); return; }
+    if (at >= scenarios[current].length) { at = 1; shown = {}; }
+    timer = setInterval(next, 2400); render();
+  });
+  $("scenarios").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-s]"); if (!b) return;
+    stop(); current = b.getAttribute("data-s"); at = 1; shown = {};
+    Array.prototype.forEach.call(this.querySelectorAll("button"), function (x) { x.setAttribute("aria-checked", String(x === b)); });
+    render();
+  });
+  render();
+
+  /* ---------------- waitlist ---------------- */
+  // On a self-hosted copy, set this to a URL that accepts a JSON POST of {email, role, note, at}.
+  var WAITLIST_ENDPOINT = "";
+  var form = $("wl-form"), msg = $("wl-msg"), submit = $("wl-submit");
+
+  function say(text, isError) { msg.hidden = false; msg.textContent = text; msg.className = "wl-msg" + (isError ? " err" : ""); }
+  function done(email) { form.hidden = true; $("wl-done").hidden = false; $("wl-done-email").textContent = email; }
+  function store() {
+    var c = window.claude;
+    if (!c || typeof c.use !== "function") return Promise.resolve(null);
+    return Promise.all([c.use("db"), c.use("user")]).then(function (r) {
+      if (!r[0] || !r[1]) return null;
+      return r[1].id().then(function (id) { return id ? r[0].doc("waitlist/" + id) : null; });
+    }).catch(function () { return null; });
+  }
+  function send(entry) {
+    if (WAITLIST_ENDPOINT) {
+      return fetch(WAITLIST_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(entry) })
+        .then(function (r) { if (!r.ok) throw { code: "http" }; });
+    }
+    return store().then(function (ref) { if (!ref) throw { code: "closed" }; return ref.set(entry); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("a[data-role]"), function (a) {
+    a.addEventListener("click", function () { $("wl-role").value = a.getAttribute("data-role"); });
+  });
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var email = $("wl-email").value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { say("That does not look like an email address. Check it and try again.", true); $("wl-email").focus(); return; }
+    submit.disabled = true; say("Adding you to the list...");
+    send({ email: email, role: $("wl-role").value, note: $("wl-note").value.trim().slice(0, 600), at: new Date().toISOString() })
+      .then(function () { done(email); })
+      .catch(function (err) {
+        submit.disabled = false;
+        if (err && err.code === "closed") say("This copy of the page cannot record sign-ups. Nothing was sent. Open the page while signed in, or use the public site once it is up.", true);
+        else say("Your sign-up was not saved. Check your connection and try again.", true);
+      });
+  });
+  // Someone who already joined sees that instead of an empty form.
+  if (!WAITLIST_ENDPOINT) {
+    store().then(function (ref) { return ref ? ref.get() : null; }).then(function (snap) {
+      var d = snap && typeof snap.data === "function" ? snap.data() : null;
+      if (d && d.email) done(String(d.email));
+    }).catch(function () {});
+  }
+})();
+</script>
